@@ -173,10 +173,7 @@ void draw(void)
 	//Angle cross:
 	spSetAlphaTest(1);
 	char buffer[256];
-	if (phi < 0.0f)
-		sprintf(buffer,"%.2f°",-phi*180.0f/M_PI);
-	else
-		sprintf(buffer,"%.2f°",90.0f-phi*180.0f/M_PI);
+	sprintf(buffer,"%.2f°",phi*180.0f/M_PI);
 	spFontDrawRight(screen->w-1,screen->h-font->maxheight,-1,buffer,font);
 	line(screen->w/2-(int)(cos(phi)*size_factor*30.0f),screen->h/2-(int)(sin(phi)*size_factor*30.0f),0,
 	     screen->w/2+(int)(cos(phi)*size_factor*30.0f),screen->h/2+(int)(sin(phi)*size_factor*30.0f),0);
@@ -226,7 +223,7 @@ void draw(void)
 int pause = 0;
 int calc(Uint32 steps)
 {
-	alpha = 1.5f+sin(rotation);
+	alpha = sin(rotation);
 	beta = 1.5f+cos(rotation*1.5f);
 	//update the marching points
 	int x,y;
