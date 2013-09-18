@@ -121,9 +121,10 @@ void line(int x1,int y1,int z1,int x2,int y2,int z2)
 	}
 }
 
+int pause = 0;
+
 void draw(void)
 {
-	spClearTarget(spGetRGB(0,0,32));
 	spSetAlphaTest(0);
 	int one;
 	if (screen->w < screen->h)
@@ -197,34 +198,69 @@ void draw(void)
 	y = (int)(sqrt(epsilon/beta)*(float)one)/2;
 	line(screen->w*19/40,screen->h/2-y,0,
 	     screen->w*21/40,screen->h/2-y,0);
-	sprintf(buffer,"sqrt(eta/beta)=%.2f",sqrt(epsilon/beta));
+	sprintf(buffer,"sqrt(epsilon/beta)=%.2f",sqrt(epsilon/beta));
 	spFontDrawMiddle(screen->w/2,screen->h/2-y-font->maxheight,0,buffer,font);
 
 	x = (int)(sqrt(epsilon/gamma)*(float)one)/2;
 	line(screen->w/2+x,screen->h*19/40,0,
 	     screen->w/2+x,screen->h*21/40,0);
-	sprintf(buffer," sqrt(eta/gamma)=%.2f",sqrt(epsilon/gamma));
+	sprintf(buffer," sqrt(epsilon/gamma)=%.2f",sqrt(epsilon/gamma));
 	spFontDraw(screen->w/2+x,screen->h/2-font->maxheight/2,0,buffer,font);
 
-	sprintf(buffer,"alpha=%.2f",alpha);
-	spFontDraw(10,screen->h-font->maxheight*4,0,buffer,font);
-	sprintf(buffer,"beta=%.2f",beta);
-	spFontDraw(10,screen->h-font->maxheight*3,0,buffer,font);
+	if (!pause)
+	{
+		sprintf(buffer,"alpha=%.2f",alpha);
+		spFontDraw(10,screen->h-font->maxheight*4,0,buffer,font);
+		sprintf(buffer,"beta=%.2f",beta);
+		spFontDraw(10,screen->h-font->maxheight*3,0,buffer,font);
+		sprintf(buffer,"epsilon=%.2f",epsilon);
+		spFontDraw(10,screen->h-font->maxheight*1,0,buffer,font);
+	}
+	else
+	{
+		sprintf(buffer,"alpha=%.2f ("SP_PAD_NAME")",alpha);
+		spFontDraw(10,screen->h-font->maxheight*4,0,buffer,font);
+		sprintf(buffer,"beta=%.2f ("SP_PAD_NAME")",beta);
+		spFontDraw(10,screen->h-font->maxheight*3,0,buffer,font);
+		sprintf(buffer,"epsilon=%.2f ([q] & [e])",epsilon);
+		spFontDraw(10,screen->h-font->maxheight*1,0,buffer,font);
+	}	
 	sprintf(buffer,"gamma=%.2f",gamma);
 	spFontDraw(10,screen->h-font->maxheight*2,0,buffer,font);
-	sprintf(buffer,"eta=%.2f",epsilon);
-	spFontDraw(10,screen->h-font->maxheight*1,0,buffer,font);
 
-	sprintf(buffer,"%i",spGetFPS());
+	sprintf(buffer,"FPS: %i",spGetFPS());
 	spFontDraw(2,2,0,buffer,font);
+	spFontDraw(2,2+font->maxheight  ,0,"[B] Exit",font);
+	spFontDraw(2,2+font->maxheight*2,0,"[R] Pause",font);
 	spFlip();
 }
 
-int pause = 0;
 int calc(Uint32 steps)
 {
-	alpha = sin(rotation);
-	beta = 1.5f+cos(rotation*1.5f);
+	if (pause)
+	{
+		if (spGetInput()->button[SP_BUTTON_L_NOWASD])
+			epsilon -= (float)steps/2000.0f;
+		if (spGetInput()->button[SP_BUTTON_R_NOWASD])
+			epsilon += (float)steps/2000.0f;
+		if (spGetInput()->axis[0] < 0)
+			alpha -= (float)steps/2000.0f;
+		if (spGetInput()->axis[0] > 0)
+			alpha += (float)steps/2000.0f;
+		if (spGetInput()->axis[1] < 0)
+			beta -= (float)steps/2000.0f;
+		if (spGetInput()->axis[1] > 0)
+			beta += (float)steps/2000.0f;
+		if (beta < 0.0f)
+			beta = 0.0f;
+		if (epsilon < 0.0f)
+			epsilon = 0.0f;
+	}
+	else
+	{
+		alpha = sin(rotation);
+		beta = 1.5f+cos(rotation*1.5f);
+	}
 	//update the marching points
 	int x,y;
 	if (screen->w < screen->h)
@@ -243,17 +279,15 @@ int calc(Uint32 steps)
 				float f_y = ((float)y / (float)RASTER_Y - 0.5f) * zoom * 2.0f;
 				marching_points[x][y] = function(f_x,f_y);
 			}
-	
-	PspInput engineInput = spGetInput();
-	if (engineInput->button[SP_BUTTON_SELECT])
+	if (spGetInput()->button[SP_BUTTON_START_NOWASD])
 	{
 		pause = 1-pause;
-		engineInput->button[SP_BUTTON_SELECT] = 0;
+		spGetInput()->button[SP_BUTTON_START_NOWASD] = 0;
 	}
 
 	if (!pause)
-		rotation += (float)steps/1000.0f;
-	if (engineInput->button[SP_BUTTON_START])
+		rotation += (float)steps/2000.0f;
+	if (spGetInput()->button[SP_BUTTON_SELECT_NOWASD])
 		return 1;
 	return 0;
 }
@@ -266,14 +300,14 @@ void resize( Uint16 w, Uint16 h )
 		spFontDelete( font );
 	font = spFontLoad( "./data/CabinCondensed-Regular.ttf", 10 * spGetSizeFactor() >> SP_ACCURACY );
 	spFontAdd( font, SP_FONT_GROUP_ASCII"°", 65535 ); //whole ASCII
-	spFontAddButton( font, 'R', SP_BUTTON_START_NAME, 65535, SP_ALPHA_COLOR ); //Return == START
-	spFontAddButton( font, 'B', SP_BUTTON_SELECT_NAME, 65535, SP_ALPHA_COLOR ); //Backspace == SELECT
-	spFontAddButton( font, 'q', SP_BUTTON_L_NAME, 65535, SP_ALPHA_COLOR ); // q == L
-	spFontAddButton( font, 'e', SP_BUTTON_R_NAME, 65535, SP_ALPHA_COLOR ); // e == R
-	spFontAddButton( font, 'a', SP_BUTTON_LEFT_NAME, 65535, SP_ALPHA_COLOR ); //a == left button
-	spFontAddButton( font, 'd', SP_BUTTON_RIGHT_NAME, 65535, SP_ALPHA_COLOR ); // d == right button
-	spFontAddButton( font, 'w', SP_BUTTON_UP_NAME, 65535, SP_ALPHA_COLOR ); // w == up button
-	spFontAddButton( font, 's', SP_BUTTON_DOWN_NAME, 65535, SP_ALPHA_COLOR ); // s == down button
+	spFontAddButton( font, 'R', SP_BUTTON_START_NOWASD_NAME, 65535, SP_ALPHA_COLOR ); //Return == START
+	spFontAddButton( font, 'B', SP_BUTTON_SELECT_NOWASD_NAME, 65535, SP_ALPHA_COLOR ); //Backspace == SELECT
+	spFontAddButton( font, 'q', SP_BUTTON_L_NOWASD_NAME, 65535, SP_ALPHA_COLOR ); // q == L
+	spFontAddButton( font, 'e', SP_BUTTON_R_NOWASD_NAME, 65535, SP_ALPHA_COLOR ); // e == R
+	spFontAddButton( font, 'a', SP_BUTTON_LEFT_NOWASD_NAME, 65535, SP_ALPHA_COLOR ); //a == left button
+	spFontAddButton( font, 'd', SP_BUTTON_RIGHT_NOWASD_NAME, 65535, SP_ALPHA_COLOR ); // d == right button
+	spFontAddButton( font, 'w', SP_BUTTON_UP_NOWASD_NAME, 65535, SP_ALPHA_COLOR ); // w == up button
+	spFontAddButton( font, 's', SP_BUTTON_DOWN_NOWASD_NAME, 65535, SP_ALPHA_COLOR ); // s == down button
 	spFontMulWidth(font,spFloatToFixed(0.85f));
 	spFontAddBorder(font , 0);
 	spSelectRenderTarget(screen);
