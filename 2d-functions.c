@@ -1,17 +1,17 @@
 #include <string.h>
 #include <sparrow3d.h>
 #include <math.h>
-Sint32 rotation = 0;
+float rotation = 0.0f;
 SDL_Surface* screen;
 spFontPointer font = NULL;
 
 #define WINDOW_X 800
 #define WINDOW_Y 600
 
-#define alpha 0.5f
-#define beta 0.7f
-#define gamma 0.5f
-#define epsilon 1.0f
+float alpha = 1.0f;
+float beta = 2.0f;
+#define gamma ((1+alpha*alpha) / beta)
+float epsilon = 1.0f;
 #define function(x,y) (gamma*x*x+2.0f*alpha*x*y+beta*y*y-epsilon)
 //#define function(x,y) (x*x+y*y-1.0f)
 
@@ -20,7 +20,7 @@ spFontPointer font = NULL;
 
 float marching_points[RASTER_X+1][RASTER_Y+1];
 
-float zoom = 5.0f;
+float zoom = 2.0f;
 
 int interpolate(int x1,float v1,int x2,float v2)
 {
@@ -139,11 +139,17 @@ void draw(void)
 			                 X_2,Y_2,marching_points[x+1][y+1],
 			                 X_1,Y_2,marching_points[x  ][y+1],65535);
 		}
+	float phi = atan(2.0f*alpha/(gamma-beta))/2.0f;
 	spLine(0,screen->h/2,0,screen->w,screen->h/2,0,65535);
 	spLine(screen->w/2,0,0,screen->w/2,screen->h,0,65535);
-	float phi = atan(2.0f*alpha/(gamma-beta))/2.0f*180.0f/M_PI;
+	float size_factor = spFixedToFloat(spGetSizeFactor());
+	spLine(screen->w/2-(int)(cos(phi)*size_factor*30.0f),screen->h/2-(int)(sin(phi)*size_factor*30.0f),0,
+	       screen->w/2+(int)(cos(phi)*size_factor*30.0f),screen->h/2+(int)(sin(phi)*size_factor*30.0f),0,65535);
+	spLine(screen->w/2-(int)(cos(phi+M_PI/2.0f)*size_factor*30.0f),screen->h/2-(int)(sin(phi+M_PI/2.0f)*size_factor*30.0f),0,
+	       screen->w/2+(int)(cos(phi+M_PI/2.0f)*size_factor*30.0f),screen->h/2+(int)(sin(phi+M_PI/2.0f)*size_factor*30.0f),0,65535);
+	//marking some specific points:
 	char buffer[256];
-	sprintf(buffer,"%.2f°",phi);
+	sprintf(buffer,"%.2f°",phi*180.0f/M_PI);
 	spSetAlphaTest(1);
 	spFontDrawRight(screen->w-1,screen->h-font->maxheight,-1,buffer,font);
 	spFlip();
@@ -152,6 +158,7 @@ void draw(void)
 int pause = 0;
 int calc(Uint32 steps)
 {
+	alpha = 1.5f+sin(rotation);
 	//update the marching points
 	int x,y;
 	for (x = 0; x <= RASTER_X; x++)
@@ -179,7 +186,7 @@ int calc(Uint32 steps)
 	}
 
 	if (!pause)
-		rotation += steps*32;
+		rotation += (float)steps/1000.0f;
 	if (engineInput->button[SP_BUTTON_START])
 		return 1;
 	return 0;
