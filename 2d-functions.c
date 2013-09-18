@@ -15,8 +15,8 @@ float epsilon = 1.0f;
 #define function(x,y) (gamma*x*x+2.0f*alpha*x*y+beta*y*y-epsilon)
 //#define function(x,y) (x*x+y*y-1.0f)
 
-#define RASTER_X (WINDOW_X/4)
-#define RASTER_Y (WINDOW_Y/4)
+#define RASTER_X (WINDOW_X/2)
+#define RASTER_Y (WINDOW_Y/2)
 
 float marching_points[RASTER_X+1][RASTER_Y+1];
 float zoom = 3.0f;
@@ -103,7 +103,7 @@ void drawMarchingLine(int x1,int y1,float v1,
 void line(int x1,int y1,int z1,int x2,int y2,int z2)
 {
 	spSetLineWidth(2);
-	spLine(x1,y1,z1,x2,y2,z2,0);
+	spLine(x1,y1,z1,x2,y2,z2,spGetRGB(128,128,128));
 	spSetLineWidth(1);
 	if (x1 == x2)
 	{
@@ -122,10 +122,13 @@ void line(int x1,int y1,int z1,int x2,int y2,int z2)
 }
 
 int pause = 0;
+int draw_field = 0;
 
 void draw(void)
 {
 	spSetAlphaTest(0);
+	if (!draw_field)
+		spClearTarget(8);
 	int one;
 	if (screen->w < screen->h)
 		one = (float)(screen->w)/zoom;
@@ -134,25 +137,27 @@ void draw(void)
 	int x,y,w,h;
 	w = screen->w/RASTER_X;
 	h = screen->h/RASTER_Y;
-	for (x = 0; x <= RASTER_X; x++)
-		for (y = 0; y <= RASTER_Y; y++)
-		{
-			int X = x*screen->w/RASTER_X;
-			int Y = y*screen->h/RASTER_Y;
-			Uint16 color;
-			if (marching_points[x][y] > 0.0f)
+	if (draw_field)
+		for (x = 0; x <= RASTER_X; x++)
+			for (y = 0; y <= RASTER_Y; y++)
 			{
-				float value = 1.0f - 1.0f / ( 1.0f + marching_points[x][y] );
-				color = spGetHSV((int)((float)SP_PI-(float)SP_PI*value),255,255);
+				int X = x*screen->w/RASTER_X;
+				int Y = y*screen->h/RASTER_Y;
+				Uint16 color;
+				if (marching_points[x][y] > 0.0f)
+				{
+					float value = 1.0f - 1.0f / ( 1.0f + marching_points[x][y] );
+					color = spGetHSV((int)((float)SP_PI-(float)SP_PI*value),255,255);
+				}
+				else
+				{
+					float value = 1.0f - 1.0f / ( 1.0f + -marching_points[x][y] );
+					color = spGetHSV((int)((float)SP_PI+(float)SP_PI*value),255,255);
+				}
+				spRectangle(X,Y,0,w,h,color);
 			}
-			else
-			{
-				float value = 1.0f - 1.0f / ( 1.0f + -marching_points[x][y] );
-				color = spGetHSV((int)((float)SP_PI+(float)SP_PI*value),255,255);
-			}
-			spRectangle(X,Y,0,w,h,color);
-		}
-	spSetLineWidth(1);
+	line(0,screen->h/2,0,screen->w,screen->h/2,0);
+	line(screen->w/2,0,0,screen->w/2,screen->h,0);
 	//Marching squares
 	for (x = 0; x < RASTER_X; x++)
 		for (y = 0; y < RASTER_Y; y++)
@@ -167,8 +172,6 @@ void draw(void)
 			                 X_1,Y_2,marching_points[x  ][y+1],65535);
 		}
 	float phi = atan(2.0f*alpha/(gamma-beta))/2.0f;
-	line(0,screen->h/2,0,screen->w,screen->h/2,0);
-	line(screen->w/2,0,0,screen->w/2,screen->h,0);
 	float size_factor = spFixedToFloat(spGetSizeFactor());
 	//marking some specific points:
 	//Angle cross:
@@ -232,11 +235,17 @@ void draw(void)
 	spFontDraw(2,2,0,buffer,font);
 	spFontDraw(2,2+font->maxheight  ,0,"[B] Exit",font);
 	spFontDraw(2,2+font->maxheight*2,0,"[R] Pause",font);
+	spFontDraw(2,2+font->maxheight*3,0,"[a] Colorful!",font);
 	spFlip();
 }
 
 int calc(Uint32 steps)
 {
+	if (spGetInput()->button[SP_BUTTON_LEFT_NOWASD])
+	{
+		spGetInput()->button[SP_BUTTON_LEFT_NOWASD] = 0;
+		draw_field = 1-draw_field;
+	}
 	if (pause)
 	{
 		if (spGetInput()->button[SP_BUTTON_L_NOWASD])
@@ -309,7 +318,7 @@ void resize( Uint16 w, Uint16 h )
 	spFontAddButton( font, 'w', SP_BUTTON_UP_NOWASD_NAME, 65535, SP_ALPHA_COLOR ); // w == up button
 	spFontAddButton( font, 's', SP_BUTTON_DOWN_NOWASD_NAME, 65535, SP_ALPHA_COLOR ); // s == down button
 	spFontMulWidth(font,spFloatToFixed(0.85f));
-	spFontAddBorder(font , 0);
+	spFontAddBorder(font , spGetRGB(128,128,128));
 	spSelectRenderTarget(screen);
 }
 
