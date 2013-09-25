@@ -5,8 +5,8 @@ float rotation = 0.0f;
 SDL_Surface* screen;
 spFontPointer font = NULL;
 
-#define WINDOW_X 1000
-#define WINDOW_Y 500
+#define WINDOW_X 800
+#define WINDOW_Y 480
 
 typedef struct { float x,y;} tPoint;
 #define PARTICLE_COUNT 500
