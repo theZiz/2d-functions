@@ -5,21 +5,44 @@ float rotation = 0.0f;
 SDL_Surface* screen;
 spFontPointer font = NULL;
 
-#define WINDOW_X 800
-#define WINDOW_Y 480
+#define WINDOW_X 400
+#define WINDOW_Y 240
 
-float alpha = 1.0f;
-float beta = 2.0f;
-#define gamma ((1+alpha*alpha) / beta)
+#define calc_gamma(alpha,beta) ((1+alpha*alpha) / beta)
+#define start_alpha 3.0f
+#define start_beta 5.0f
+float start_gamma = calc_gamma(start_alpha,start_beta);
+float alpha;
+float beta;
+float Gamma;
 float epsilon = 1.0f;
-#define function(x,y) (gamma*x*x+2.0f*alpha*x*y+beta*y*y-epsilon)
+float EPSILON;
 //#define function(x,y) (x*x+y*y-1.0f)
+#define function(x,y) (Gamma*x*x+2.0f*alpha*x*y+beta*y*y-epsilon)
+
+//Drift Strecke:
+// | 1  -2*l   l*l |
+// | 0     1    -l |
+// | 0     0     1 |
+//C function
+#define Cf(s) 1
+//C derivation
+#define Cd(s) 0
+//S function
+#define Sf(s) s
+//S derivation
+#define Sd(s) 1
+
+float s = 0.0f;
 
 #define RASTER_X (WINDOW_X/2)
 #define RASTER_Y (WINDOW_Y/2)
 
 float marching_points[RASTER_X+1][RASTER_Y+1];
 float zoom = 3.0f;
+
+int pause = 0;
+int draw_field = 0;
 
 int interpolate(int x1,float v1,int x2,float v2)
 {
@@ -121,9 +144,6 @@ void line(int x1,int y1,int z1,int x2,int y2,int z2)
 	}
 }
 
-int pause = 0;
-int draw_field = 0;
-
 void draw(void)
 {
 	spSetAlphaTest(0);
@@ -171,7 +191,7 @@ void draw(void)
 			                 X_2,Y_2,marching_points[x+1][y+1],
 			                 X_1,Y_2,marching_points[x  ][y+1],65535);
 		}
-	float phi = atan(2.0f*alpha/(gamma-beta))/2.0f;
+	float phi = atan(2.0f*alpha/(Gamma-beta))/2.0f;
 	float size_factor = spFixedToFloat(spGetSizeFactor());
 	//marking some specific points:
 	//Angle cross:
@@ -184,8 +204,8 @@ void draw(void)
 	line(screen->w/2-(int)(cos(phi+M_PI/2.0f)*size_factor*30.0f),screen->h/2-(int)(sin(phi+M_PI/2.0f)*size_factor*30.0f),0,
 	     screen->w/2+(int)(cos(phi+M_PI/2.0f)*size_factor*30.0f),screen->h/2+(int)(sin(phi+M_PI/2.0f)*size_factor*30.0f),0);
 
-	x = (int)(-alpha*sqrt(epsilon/gamma)*(float)one)/2;
-	y = (int)(sqrt(epsilon*gamma)*(float)one)/2;
+	x = (int)(-alpha*sqrt(epsilon/Gamma)*(float)one)/2;
+	y = (int)(sqrt(epsilon*Gamma)*(float)one)/2;
 	line( screen->w*19/40+x, screen->h/2+y, 0,
 	      screen->w*21/40+x, screen->h/2+y, 0);
 	line( screen->w*19/40-x, screen->h/2-y, 0,
@@ -204,38 +224,47 @@ void draw(void)
 	sprintf(buffer,"sqrt(epsilon/beta)=%.2f",sqrt(epsilon/beta));
 	spFontDrawMiddle(screen->w/2,screen->h/2-y-font->maxheight,0,buffer,font);
 
-	x = (int)(sqrt(epsilon/gamma)*(float)one)/2;
+	x = (int)(sqrt(epsilon/Gamma)*(float)one)/2;
 	line(screen->w/2+x,screen->h*19/40,0,
 	     screen->w/2+x,screen->h*21/40,0);
-	sprintf(buffer," sqrt(epsilon/gamma)=%.2f",sqrt(epsilon/gamma));
+	sprintf(buffer," sqrt(epsilon/gamma)=%.2f",sqrt(epsilon/Gamma));
 	spFontDraw(screen->w/2+x,screen->h/2-font->maxheight/2,0,buffer,font);
 
 	if (!pause)
 	{
 		sprintf(buffer,"alpha=%.2f",alpha);
-		spFontDraw(10,screen->h-font->maxheight*4,0,buffer,font);
+		spFontDraw(2,screen->h-font->maxheight*5,0,buffer,font);
 		sprintf(buffer,"beta=%.2f",beta);
-		spFontDraw(10,screen->h-font->maxheight*3,0,buffer,font);
+		spFontDraw(2,screen->h-font->maxheight*4,0,buffer,font);
 		sprintf(buffer,"epsilon=%.2f",epsilon);
-		spFontDraw(10,screen->h-font->maxheight*1,0,buffer,font);
+		spFontDraw(2,screen->h-font->maxheight*2,0,buffer,font);
 	}
 	else
 	{
 		sprintf(buffer,"alpha=%.2f ("SP_PAD_NAME")",alpha);
-		spFontDraw(10,screen->h-font->maxheight*4,0,buffer,font);
+		spFontDraw(2,screen->h-font->maxheight*5,0,buffer,font);
 		sprintf(buffer,"beta=%.2f ("SP_PAD_NAME")",beta);
-		spFontDraw(10,screen->h-font->maxheight*3,0,buffer,font);
+		spFontDraw(2,screen->h-font->maxheight*4,0,buffer,font);
 		sprintf(buffer,"epsilon=%.2f ([q] & [e])",epsilon);
-		spFontDraw(10,screen->h-font->maxheight*1,0,buffer,font);
+		spFontDraw(2,screen->h-font->maxheight*2,0,buffer,font);
 	}	
-	sprintf(buffer,"gamma=%.2f",gamma);
-	spFontDraw(10,screen->h-font->maxheight*2,0,buffer,font);
+	sprintf(buffer,"gamma=%.2f",Gamma);
+	spFontDraw(2,screen->h-font->maxheight*3,0,buffer,font);
+	sprintf(buffer,"epsilon (~)=%.2f",EPSILON);
+	spFontDraw(2,screen->h-font->maxheight*1,0,buffer,font);
+
+	sprintf(buffer,"s=%.2f",s);
+	spFontDrawRight(screen->w-1,screen->h-font->maxheight*3,-1,buffer,font);
+	float s_w = start_alpha / start_gamma;
+	sprintf(buffer,"s_w=%.2f",s_w);
+	spFontDrawRight(screen->w-1,screen->h-font->maxheight*2,-1,buffer,font);
 
 	sprintf(buffer,"FPS: %i",spGetFPS());
 	spFontDraw(2,2,0,buffer,font);
 	spFontDraw(2,2+font->maxheight  ,0,"[B] Exit",font);
 	spFontDraw(2,2+font->maxheight*2,0,"[R] Pause",font);
-	spFontDraw(2,2+font->maxheight*3,0,"[a] Colorful!",font);
+	spFontDraw(2,2+font->maxheight*3,0,"[d] Restart",font);
+	spFontDraw(2,2+font->maxheight*4,0,"[a] Colorful!",font);
 	spFlip();
 }
 
@@ -245,6 +274,11 @@ int calc(Uint32 steps)
 	{
 		spGetInput()->button[SP_BUTTON_LEFT_NOWASD] = 0;
 		draw_field = 1-draw_field;
+	}
+	if (spGetInput()->button[SP_BUTTON_RIGHT_NOWASD])
+	{
+		spGetInput()->button[SP_BUTTON_RIGHT_NOWASD] = 0;
+		s = 0.0f;
 	}
 	if (pause)
 	{
@@ -264,15 +298,33 @@ int calc(Uint32 steps)
 			beta = 0.0f;
 		if (epsilon < 0.0f)
 			epsilon = 0.0f;
+		Gamma = calc_gamma(alpha,beta);
 	}
 	else
 	{
-		alpha = sin(rotation);
+		/*alpha = sin(rotation);
 		beta = 1.5f+cos(rotation*1.5f);
+		Gamma = calc_gamma(alpha,beta);*/
+		s += (float)steps/5000.0f;
+		beta = Cf(s)*Cf(s)*start_beta
+		     + -2.0f*Sf(s)*Cf(s)*start_alpha
+		     + Sf(s)*Sf(s)*start_gamma;
+		alpha = -Cf(s)*Cd(s)*start_beta
+		      + (Sd(s)*Cf(s)+Sf(s)*Cd(s))*start_alpha
+		      + -Sf(s)*Sd(s)*start_gamma;
+		Gamma = Cd(s)*Cd(s)*start_beta
+		      + -2.0f*Sd(s)*Cd(s)*start_alpha
+		      + Sd(s)*Sd(s)*start_gamma;
+		/*alpha = start_alpha;
+		beta = start_beta;
+		Gamma = start_gamma;*/
 	}
 	//update the marching points
 	int x,y;
+	float square_size;
 	if (screen->w < screen->h)
+	{
+		square_size = (1.0f / (float)RASTER_X * zoom * 2.0f) * (1.0f / (float)RASTER_Y * zoom * 2.0f * (float)(screen->h)/(float)(screen->w));
 		for (x = 0; x <= RASTER_X; x++)
 			for (y = 0; y <= RASTER_Y; y++)
 			{
@@ -280,7 +332,10 @@ int calc(Uint32 steps)
 				float f_y = ((float)y / (float)RASTER_Y - 0.5f) * zoom * 2.0f * (float)(screen->h)/(float)(screen->w);
 				marching_points[x][y] = function(f_x,f_y);
 			}
+	}
 	else
+	{
+		square_size = (1.0f / (float)RASTER_Y * zoom * 2.0f) * (1.0f / (float)RASTER_X * zoom * 2.0f * (float)(screen->w)/(float)(screen->h));
 		for (x = 0; x <= RASTER_X; x++)
 			for (y = 0; y <= RASTER_Y; y++)
 			{
@@ -288,6 +343,13 @@ int calc(Uint32 steps)
 				float f_y = ((float)y / (float)RASTER_Y - 0.5f) * zoom * 2.0f;
 				marching_points[x][y] = function(f_x,f_y);
 			}
+	}
+	EPSILON = 0.0f;
+	for (x = 0; x <= RASTER_X; x++)
+		for (y = 0; y <= RASTER_Y; y++)
+			if (marching_points[x][y] <= 0.0f)
+				EPSILON += square_size;
+	EPSILON /= M_PI;
 	if (spGetInput()->button[SP_BUTTON_START_NOWASD])
 	{
 		pause = 1-pause;
@@ -324,6 +386,9 @@ void resize( Uint16 w, Uint16 h )
 
 int main(int argc, char **argv)
 {
+	alpha = start_alpha;
+	beta = start_beta;
+	Gamma = start_gamma;
 	spSetDefaultWindowSize( WINDOW_X, WINDOW_Y );
 	spInitCore();
 	screen = spCreateDefaultWindow();
