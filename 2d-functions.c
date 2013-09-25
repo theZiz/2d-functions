@@ -5,8 +5,13 @@ float rotation = 0.0f;
 SDL_Surface* screen;
 spFontPointer font = NULL;
 
-#define WINDOW_X 400
-#define WINDOW_Y 240
+#define WINDOW_X 1000
+#define WINDOW_Y 500
+
+typedef struct { float x,y;} tPoint;
+#define PARTICLE_COUNT 500
+tPoint start_particle[PARTICLE_COUNT];
+tPoint particle[PARTICLE_COUNT];
 
 #define calc_gamma(alpha,beta) ((1+alpha*alpha) / beta)
 #define start_alpha 3.0f
@@ -39,9 +44,9 @@ float s = 0.0f;
 #define RASTER_Y (WINDOW_Y/2)
 
 float marching_points[RASTER_X+1][RASTER_Y+1];
-float zoom = 3.0f;
+float zoom = 2.0f;
 
-int pause = 0;
+int pause = 1;
 int draw_field = 0;
 
 int interpolate(int x1,float v1,int x2,float v2)
@@ -191,7 +196,18 @@ void draw(void)
 			                 X_2,Y_2,marching_points[x+1][y+1],
 			                 X_1,Y_2,marching_points[x  ][y+1],65535);
 		}
-	float phi = atan(2.0f*alpha/(Gamma-beta))/2.0f;
+	//Drawing the particles:
+	int i;
+	for (i = 0; i < PARTICLE_COUNT; i++)
+	{
+		int x = (int)(particle[i].x*one/2.0f) + screen->w/2;
+		int y = (int)(particle[i].y*one/2.0f) + screen->h/2;
+		spEllipse(x,y,0,2,2,spGetRGB(0,255,127));
+	}
+	float ATAN = 2.0f*alpha/(Gamma-beta);
+	float phi = atan(ATAN)/2.0f;
+	if (ATAN < 0.0f)
+		phi = -phi;
 	float size_factor = spFixedToFloat(spGetSizeFactor());
 	//marking some specific points:
 	//Angle cross:
@@ -253,6 +269,14 @@ void draw(void)
 	sprintf(buffer,"epsilon (~)=%.2f",EPSILON);
 	spFontDraw(2,screen->h-font->maxheight*1,0,buffer,font);
 
+	float SIN = sin(phi);
+	float COS = cos(phi);
+	float a=sqrt(epsilon/(Gamma*COS*COS-2.0f*alpha*COS*SIN+beta*SIN*SIN));
+	float b=sqrt(epsilon/(Gamma*SIN*SIN+2.0f*alpha*COS*SIN+beta*COS*COS));
+	sprintf(buffer,"a=%.2f",a);
+	spFontDrawRight(screen->w-1,screen->h-font->maxheight*5,-1,buffer,font);
+	sprintf(buffer,"b=%.2f",b);
+	spFontDrawRight(screen->w-1,screen->h-font->maxheight*4,-1,buffer,font);
 	sprintf(buffer,"s=%.2f",s);
 	spFontDrawRight(screen->w-1,screen->h-font->maxheight*3,-1,buffer,font);
 	float s_w = start_alpha / start_gamma;
@@ -318,6 +342,14 @@ int calc(Uint32 steps)
 		/*alpha = start_alpha;
 		beta = start_beta;
 		Gamma = start_gamma;*/
+		int i;
+		for (i = 0; i < PARTICLE_COUNT; i++)
+		{
+			particle[i].x = Cf(s)*start_particle[i].x
+			              + Sf(s)*start_particle[i].y;
+			particle[i].y = Cd(s)*start_particle[i].x
+			              + Sd(s)*start_particle[i].y;
+		}
 	}
 	//update the marching points
 	int x,y;
@@ -386,9 +418,36 @@ void resize( Uint16 w, Uint16 h )
 
 int main(int argc, char **argv)
 {
+	srand(time(NULL));
 	alpha = start_alpha;
 	beta = start_beta;
 	Gamma = start_gamma;
+	//dicing the particles positions:
+	float ATAN = 2.0f*alpha/(Gamma-beta);
+	float phi = atan(ATAN)/2.0f;
+	if (ATAN < 0.0f)
+		phi = -phi;
+	float SIN = sin(phi);
+	float COS = cos(phi);
+	float a=sqrt(epsilon/(Gamma*COS*COS-2.0f*alpha*COS*SIN+beta*SIN*SIN));
+	float b=sqrt(epsilon/(Gamma*SIN*SIN+2.0f*alpha*COS*SIN+beta*COS*COS));
+	int i;
+	for (i = 0; i < PARTICLE_COUNT; i++)
+	{
+		float u1,u2,q;
+		do
+		{
+			u1 = ((float)(rand())/(float)RAND_MAX)*2.0f-1.0f;
+			u2 = ((float)(rand())/(float)RAND_MAX)*2.0f-1.0f;
+			q = u1*u1+u2*u2;
+		}
+		while (q == 0.0f || q > 1.0f);
+		float p = sqrt(-2.0f*log(q)/q);
+		float x = u1*p/3.0f*a;
+		float y = u2*p/3.0f*b;
+		particle[i].x = start_particle[i].x = x*COS+y*SIN;
+		particle[i].y = start_particle[i].y = x*-SIN+y*COS;
+	}
 	spSetDefaultWindowSize( WINDOW_X, WINDOW_Y );
 	spInitCore();
 	screen = spCreateDefaultWindow();
