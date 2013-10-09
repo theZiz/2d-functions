@@ -13,14 +13,24 @@ typedef struct { float x,y;} tPoint;
 tPoint start_particle[PARTICLE_COUNT];
 tPoint particle[PARTICLE_COUNT];
 
+//X / Y
+//#define A -0.0175f
+//#define B 4.0f
+//#define C 0.0001
+
+//Z
+#define A 0.0f
+#define B 2500.0f
+#define C 1.6e-7
+
 #define calc_gamma(alpha,beta) ((1+alpha*alpha) / beta)
-#define start_alpha 3.0f
-#define start_beta 5.0f
-float start_gamma = calc_gamma(start_alpha,start_beta);
+float start_alpha;
+float start_beta;
+float start_Gamma;
+float epsilon;
 float alpha;
 float beta;
 float Gamma;
-float epsilon = 1.0f;
 float EPSILON;
 //#define function(x,y) (x*x+y*y-1.0f)
 #define function(x,y) (Gamma*x*x+2.0f*alpha*x*y+beta*y*y-epsilon)
@@ -213,7 +223,7 @@ void draw(void)
 	//Angle cross:
 	spSetAlphaTest(1);
 	char buffer[256];
-	sprintf(buffer,"%.2f°",phi*180.0f/M_PI);
+	sprintf(buffer,"%.6f°",phi*180.0f/M_PI);
 	spFontDrawRight(screen->w-1,screen->h-font->maxheight,-1,buffer,font);
 	line(screen->w/2-(int)(cos(phi)*size_factor*30.0f),screen->h/2-(int)(sin(phi)*size_factor*30.0f),0,
 	     screen->w/2+(int)(cos(phi)*size_factor*30.0f),screen->h/2+(int)(sin(phi)*size_factor*30.0f),0);
@@ -237,50 +247,50 @@ void draw(void)
 	y = (int)(sqrt(epsilon/beta)*(float)one)/2;
 	line(screen->w*19/40,screen->h/2-y,0,
 	     screen->w*21/40,screen->h/2-y,0);
-	sprintf(buffer,"sqrt(epsilon/beta)=%.2f",sqrt(epsilon/beta));
+	sprintf(buffer,"sqrt(epsilon/beta)=%.6f",sqrt(epsilon/beta));
 	spFontDrawMiddle(screen->w/2,screen->h/2-y-font->maxheight,0,buffer,font);
 
 	x = (int)(sqrt(epsilon/Gamma)*(float)one)/2;
 	line(screen->w/2+x,screen->h*19/40,0,
 	     screen->w/2+x,screen->h*21/40,0);
-	sprintf(buffer," sqrt(epsilon/gamma)=%.2f",sqrt(epsilon/Gamma));
+	sprintf(buffer," sqrt(epsilon/gamma)=%.6f",sqrt(epsilon/Gamma));
 	spFontDraw(screen->w/2+x,screen->h/2-font->maxheight/2,0,buffer,font);
 
 	if (!pause)
 	{
-		sprintf(buffer,"alpha=%.2f",alpha);
+		sprintf(buffer,"alpha=%.6f",alpha);
 		spFontDraw(2,screen->h-font->maxheight*5,0,buffer,font);
-		sprintf(buffer,"beta=%.2f",beta);
+		sprintf(buffer,"beta=%.6f",beta);
 		spFontDraw(2,screen->h-font->maxheight*4,0,buffer,font);
-		sprintf(buffer,"epsilon=%.2f",epsilon);
+		sprintf(buffer,"epsilon=%.6f",epsilon);
 		spFontDraw(2,screen->h-font->maxheight*2,0,buffer,font);
 	}
 	else
 	{
-		sprintf(buffer,"alpha=%.2f ("SP_PAD_NAME")",alpha);
+		sprintf(buffer,"alpha=%.6f ("SP_PAD_NAME")",alpha);
 		spFontDraw(2,screen->h-font->maxheight*5,0,buffer,font);
-		sprintf(buffer,"beta=%.2f ("SP_PAD_NAME")",beta);
+		sprintf(buffer,"beta=%.6f ("SP_PAD_NAME")",beta);
 		spFontDraw(2,screen->h-font->maxheight*4,0,buffer,font);
-		sprintf(buffer,"epsilon=%.2f ([q] & [e])",epsilon);
+		sprintf(buffer,"epsilon=%.6f ([q] & [e])",epsilon);
 		spFontDraw(2,screen->h-font->maxheight*2,0,buffer,font);
 	}	
-	sprintf(buffer,"gamma=%.2f",Gamma);
+	sprintf(buffer,"gamma=%.6f",Gamma);
 	spFontDraw(2,screen->h-font->maxheight*3,0,buffer,font);
-	sprintf(buffer,"epsilon (~)=%.2f",EPSILON);
+	sprintf(buffer,"epsilon (~)=%.6f",EPSILON);
 	spFontDraw(2,screen->h-font->maxheight*1,0,buffer,font);
 
 	float SIN = sin(phi);
 	float COS = cos(phi);
 	float a=sqrt(epsilon/(Gamma*COS*COS-2.0f*alpha*COS*SIN+beta*SIN*SIN));
 	float b=sqrt(epsilon/(Gamma*SIN*SIN+2.0f*alpha*COS*SIN+beta*COS*COS));
-	sprintf(buffer,"a=%.2f",a);
+	sprintf(buffer,"a=%.6f",a);
 	spFontDrawRight(screen->w-1,screen->h-font->maxheight*5,-1,buffer,font);
-	sprintf(buffer,"b=%.2f",b);
+	sprintf(buffer,"b=%.6f",b);
 	spFontDrawRight(screen->w-1,screen->h-font->maxheight*4,-1,buffer,font);
-	sprintf(buffer,"s=%.2f",s);
+	sprintf(buffer,"s=%.6f",s);
 	spFontDrawRight(screen->w-1,screen->h-font->maxheight*3,-1,buffer,font);
-	float s_w = start_alpha / start_gamma;
-	sprintf(buffer,"s_w=%.2f",s_w);
+	float s_w = start_alpha / start_Gamma;
+	sprintf(buffer,"s_w=%.6f",s_w);
 	spFontDrawRight(screen->w-1,screen->h-font->maxheight*2,-1,buffer,font);
 
 	sprintf(buffer,"FPS: %i",spGetFPS());
@@ -329,16 +339,16 @@ int calc(Uint32 steps)
 		/*alpha = sin(rotation);
 		beta = 1.5f+cos(rotation*1.5f);
 		Gamma = calc_gamma(alpha,beta);*/
-		s += (float)steps/5000.0f;
+		s += (float)steps/50.0f;
 		beta = Cf(s)*Cf(s)*start_beta
 		     + -2.0f*Sf(s)*Cf(s)*start_alpha
-		     + Sf(s)*Sf(s)*start_gamma;
+		     + Sf(s)*Sf(s)*start_Gamma;
 		alpha = -Cf(s)*Cd(s)*start_beta
 		      + (Sd(s)*Cf(s)+Sf(s)*Cd(s))*start_alpha
-		      + -Sf(s)*Sd(s)*start_gamma;
+		      + -Sf(s)*Sd(s)*start_Gamma;
 		Gamma = Cd(s)*Cd(s)*start_beta
 		      + -2.0f*Sd(s)*Cd(s)*start_alpha
-		      + Sd(s)*Sd(s)*start_gamma;
+		      + Sd(s)*Sd(s)*start_Gamma;
 		/*alpha = start_alpha;
 		beta = start_beta;
 		Gamma = start_gamma;*/
@@ -419,9 +429,18 @@ void resize( Uint16 w, Uint16 h )
 int main(int argc, char **argv)
 {
 	srand(time(NULL));
+	//epsilon = 1.0f;
+	//start_alpha = 3.0f;
+	//start_beta = 5.0f;
+	epsilon = sqrt(C-A*A/B);
+	start_alpha = A/(-epsilon);
+	start_beta = B/epsilon;
+	zoom = 0.1f;
+	
+	start_Gamma = calc_gamma(start_alpha,start_beta);
 	alpha = start_alpha;
 	beta = start_beta;
-	Gamma = start_gamma;
+	Gamma = start_Gamma;
 	//dicing the particles positions:
 	float ATAN = 2.0f*alpha/(Gamma-beta);
 	float phi = atan(ATAN)/2.0f;
