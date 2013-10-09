@@ -13,15 +13,34 @@ typedef struct { float x,y;} tPoint;
 tPoint start_particle[PARTICLE_COUNT];
 tPoint particle[PARTICLE_COUNT];
 
+
 //X / Y
-//#define A -0.0175f
-//#define B 4.0f
-//#define C 0.0001
+#define A -0.0175f
+#define B 4.0f
+#define C 0.0001
 
 //Z
-#define A 0.0f
-#define B 2500.0f
-#define C 1.6e-7
+//#define A 0.0f
+//#define B 2500.0f
+//#define C 1.6e-7
+
+//Testing values:
+#define ONE_STEP (1.0f/5000.0f)
+#define ZOOM 3.0f
+#define SET_START \
+	epsilon = 1.0f; \
+	start_alpha = 3.0f; \
+	start_beta = 5.0f;
+
+//OLAV
+//#define ONE_STEP (1.0f/50.0f)
+//#define ZOOM 0.1f
+//#define SET_START \
+	epsilon = sqrt(C-A*A/B); \
+	start_alpha = A/(-epsilon); \
+	start_beta = B/epsilon;
+
+
 
 #define calc_gamma(alpha,beta) ((1+alpha*alpha) / beta)
 float start_alpha;
@@ -339,7 +358,7 @@ int calc(Uint32 steps)
 		/*alpha = sin(rotation);
 		beta = 1.5f+cos(rotation*1.5f);
 		Gamma = calc_gamma(alpha,beta);*/
-		s += (float)steps/50.0f;
+		s += (float)steps*ONE_STEP;
 		beta = Cf(s)*Cf(s)*start_beta
 		     + -2.0f*Sf(s)*Cf(s)*start_alpha
 		     + Sf(s)*Sf(s)*start_Gamma;
@@ -429,13 +448,8 @@ void resize( Uint16 w, Uint16 h )
 int main(int argc, char **argv)
 {
 	srand(time(NULL));
-	//epsilon = 1.0f;
-	//start_alpha = 3.0f;
-	//start_beta = 5.0f;
-	epsilon = sqrt(C-A*A/B);
-	start_alpha = A/(-epsilon);
-	start_beta = B/epsilon;
-	zoom = 0.1f;
+	SET_START
+	zoom = ZOOM;
 	
 	start_Gamma = calc_gamma(start_alpha,start_beta);
 	alpha = start_alpha;
