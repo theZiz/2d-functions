@@ -4,6 +4,9 @@ DYNAMIC = -lSDL_ttf -lSDL_mixer -lSDL_image -lSDL -lm
 CFLAGS = -O3 -fsingle-precision-constant -fPIC
 # Testtweaks: -fgcse-lm -fgcse-sm -fsched-spec-load -fmodulo-sched -funsafe-loop-optimizations -Wunsafe-loop-optimizations -fgcse-las -fgcse-after-reload -fvariable-expansion-in-unroller -ftracer -fbranch-target-load-optimize
 GENERAL_TWEAKS = -ffast-math
+# GENERAL_TWEAKS += -DNO_BLAS
+# BLAS = -lblas
+BLAS = -lopenblas -L/usr/lib/openblas-base
 #==PC==
 CPP = gcc -g -march=native -DX86CPU $(GENERAL_TWEAKS)
 SDL = `sdl-config --cflags`
@@ -31,7 +34,7 @@ targets:
 
 2d-functions: 2d-functions.c makeBuildDir
 	cp $(SPARROW_LIB)/libsparrow3d.so $(BUILD)
-	$(CPP) $(CFLAGS) 2d-functions.c $(SDL) $(INCLUDE) $(LIB) $(STATIC) $(DYNAMIC) -o $(BUILD)/2d-functions
+	$(CPP) $(CFLAGS) 2d-functions.c $(SDL) $(INCLUDE) $(LIB) $(STATIC) $(DYNAMIC) $(BLAS) -o $(BUILD)/2d-functions
 
 makeBuildDir:
 	 @if [ ! -d $(BUILD:/2d-functions=/) ]; then mkdir $(BUILD:/2d-functions=/);fi

@@ -1,6 +1,10 @@
 #include <string.h>
 #include <sparrow3d.h>
 #include <math.h>
+#ifndef NO_BLAS
+	#include <cblas.h>
+#endif
+
 float rotation = 0.0f;
 SDL_Surface* screen;
 spFontPointer font = NULL;
@@ -8,10 +12,10 @@ spFontPointer font = NULL;
 #define WINDOW_X 800
 #define WINDOW_Y 480
 
-typedef struct { float x,y;} tPoint;
-#define PARTICLE_COUNT 500
-tPoint start_particle[PARTICLE_COUNT];
-tPoint particle[PARTICLE_COUNT];
+#define PARTICLE_COUNT 5000000
+#define PARTICLE_NEXT_DRAW 10000
+float start_particle[2][PARTICLE_COUNT];
+float particle[2][PARTICLE_COUNT];
 
 
 //X / Y
@@ -34,9 +38,9 @@ tPoint particle[PARTICLE_COUNT];
 
 //OLAV
 //#define ONE_STEP (1.0f/50.0f)
-//#define ZOOM 0.1f
+//#define ZOOM 0.05f
 //#define SET_START \
-	epsilon = sqrt(C-A*A/B); \
+	epsilon = sqrt(C*B-A*A); \
 	start_alpha = A/(-epsilon); \
 	start_beta = B/epsilon;
 
@@ -227,10 +231,10 @@ void draw(void)
 		}
 	//Drawing the particles:
 	int i;
-	for (i = 0; i < PARTICLE_COUNT; i++)
+	for (i = 0; i < PARTICLE_COUNT; i+=PARTICLE_NEXT_DRAW)
 	{
-		int x = (int)(particle[i].x*one/2.0f) + screen->w/2;
-		int y = (int)(particle[i].y*one/2.0f) + screen->h/2;
+		int x = (int)(particle[0][i]*one/2.0f) + screen->w/2;
+		int y = (int)(particle[1][i]*one/2.0f) + screen->h/2;
 		spEllipse(x,y,0,2,2,spGetRGB(0,255,127));
 	}
 	float ATAN = 2.0f*alpha/(Gamma-beta);
@@ -311,7 +315,24 @@ void draw(void)
 	float s_w = start_alpha / start_Gamma;
 	sprintf(buffer,"s_w=%.6f",s_w);
 	spFontDrawRight(screen->w-1,screen->h-font->maxheight*2,-1,buffer,font);
+	
+	spRotozoomSurface(screen->w*53/64,font->maxheight,0,spFontGetLetter(font,'(')->surface,spFloatToFixed(2.0f),spFloatToFixed(2.0f),0);
+	float Af = -epsilon*alpha;
+	float Bf = epsilon*beta;
+	float Cf = epsilon*Gamma;
+	
+	sprintf(buffer,"%.2f",Bf);
+	spFontDrawMiddle(screen->w*56/64,0              ,0,buffer,font);
+	sprintf(buffer,"%.2f",Af);
+	spFontDrawMiddle(screen->w*56/64,font->maxheight,0,buffer,font);
+	spFontDrawMiddle(screen->w*60/64,0              ,0,buffer,font);
+	sprintf(buffer,"%.2f",Cf);
+	spFontDrawMiddle(screen->w*60/64,font->maxheight,0,buffer,font);
+	spRotozoomSurface(screen->w*63/64,font->maxheight,0,spFontGetLetter(font,')')->surface,spFloatToFixed(2.0f),spFloatToFixed(2.0f),0);
 
+	sprintf(buffer,"X=%.6f",sqrt(Bf));
+	spFontDrawRight(screen->w-1,screen->h*3/16,0,buffer,font);
+	
 	sprintf(buffer,"FPS: %i",spGetFPS());
 	spFontDraw(2,2,0,buffer,font);
 	spFontDraw(2,2+font->maxheight  ,0,"[B] Exit",font);
@@ -371,14 +392,21 @@ int calc(Uint32 steps)
 		/*alpha = start_alpha;
 		beta = start_beta;
 		Gamma = start_gamma;*/
-		int i;
-		for (i = 0; i < PARTICLE_COUNT; i++)
-		{
-			particle[i].x = Cf(s)*start_particle[i].x
-			              + Sf(s)*start_particle[i].y;
-			particle[i].y = Cd(s)*start_particle[i].x
-			              + Sd(s)*start_particle[i].y;
-		}
+		#ifdef NO_BLAS
+			int i;
+			for (i = 0; i < PARTICLE_COUNT; i++)
+			{
+				particle[0][i] = Cf(s)*start_particle[0][i]
+							   + Sf(s)*start_particle[1][i];
+				particle[1][i] = Cd(s)*start_particle[0][i]
+							   + Sd(s)*start_particle[1][i];
+			}
+		#else
+			float matrix[2][2] = {{Cf(s),Sf(s)},{Cd(s),Sd(s)}};
+			cblas_sgemm( CblasRowMajor, CblasNoTrans, CblasNoTrans, 2, PARTICLE_COUNT, 2,
+						 1.0f, (float*)matrix, 2, (float*)start_particle, PARTICLE_COUNT, 0.0f, (float*)particle, PARTICLE_COUNT);
+		#endif
+		
 	}
 	//update the marching points
 	int x,y;
@@ -478,8 +506,8 @@ int main(int argc, char **argv)
 		float p = sqrt(-2.0f*log(q)/q);
 		float x = u1*p/3.0f*a;
 		float y = u2*p/3.0f*b;
-		particle[i].x = start_particle[i].x = x*COS+y*SIN;
-		particle[i].y = start_particle[i].y = x*-SIN+y*COS;
+		particle[0][i] = start_particle[0][i] = x*COS+y*SIN;
+		particle[1][i] = start_particle[1][i] = x*-SIN+y*COS;
 	}
 	spSetDefaultWindowSize( WINDOW_X, WINDOW_Y );
 	spInitCore();
