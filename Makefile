@@ -7,6 +7,7 @@ GENERAL_TWEAKS = -ffast-math
 # GENERAL_TWEAKS += -DNO_BLAS
 # BLAS = -lblas
 BLAS = -lopenblas -L/usr/lib/openblas-base
+# BLAS =  -L/usr/lib/atlas-base/atlas/ -lblas
 #==PC==
 CPP = gcc -g -march=native -DX86CPU $(GENERAL_TWEAKS)
 SDL = `sdl-config --cflags`
@@ -32,7 +33,7 @@ all: 2d-functions
 targets:
 	@echo "The targets are the same like for sparrow3d. :P"
 
-2d-functions: 2d-functions.c makeBuildDir
+2d-functions: 2d-functions.c helpers.c defines.h makeBuildDir
 	cp $(SPARROW_LIB)/libsparrow3d.so $(BUILD)
 	$(CPP) $(CFLAGS) 2d-functions.c $(SDL) $(INCLUDE) $(LIB) $(STATIC) $(DYNAMIC) $(BLAS) -o $(BUILD)/2d-functions
 
