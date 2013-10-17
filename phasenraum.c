@@ -9,13 +9,27 @@ typedef struct {
 	float alpha;
 	float beta;
 	float gamma;
+	Uint16 color;
 } tPhasenraum;
+
+float calc_phi(float alpha,float beta,float gamma)
+{
+	float ATAN = 2.0f*alpha/(gamma-beta);
+	float phi = atan(ATAN)/2.0f;
+	/*if (gamma < beta)
+	{
+		if (alpha < 0.0f)
+			phi-=M_PI/2.0f;
+		else
+			phi+=M_PI/2.0f;
+	}*/
+	return phi;
+}
 
 void dicePhasenraumParticles(tPhasenraum* raum)
 {
 	//dicing the particles positions:
-	float ATAN = 2.0f*raum->alpha/(raum->gamma-raum->beta);
-	float phi = atan(ATAN)/2.0f;
+	float phi = calc_phi(raum->alpha,raum->beta,raum->gamma);
 	float SIN = -sin(phi);
 	float COS = cos(phi);
 	float a=sqrt(raum->epsilon/(raum->gamma*COS*COS-2.0f*raum->alpha*COS*SIN+raum->beta*SIN*SIN));
@@ -39,7 +53,7 @@ void dicePhasenraumParticles(tPhasenraum* raum)
 	}	
 }
 
-void initPhasenraum(tPhasenraum* raum,float start_alpha,float start_beta,float epsilon)
+void initPhasenraum(tPhasenraum* raum,float start_alpha,float start_beta,float epsilon,Uint16 color)
 {
 	raum->epsilon = epsilon;
 	raum->start_alpha = start_alpha;
@@ -48,17 +62,66 @@ void initPhasenraum(tPhasenraum* raum,float start_alpha,float start_beta,float e
 	raum->alpha = raum->start_alpha;
 	raum->beta = raum->start_beta;
 	raum->gamma = raum->start_gamma;
+	raum->color = color;
 	dicePhasenraumParticles(raum);
 }
 
-void loadPhasenraum(tPhasenraum* raum)
+void loadPhasenraum(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,Uint16 color1,Uint16 color2,Uint16 color3)
 {
 	//ToDo: Load from file!
-	float A = -0.0175f;
-	float B = 4.0f;
-	float C = 0.0001;
+	float matrix[6][6];
+	memset(matrix,0,sizeof(float)*36);
+	matrix[0][0] = 4.0f;
+	matrix[0][1] = matrix[1][0] = -0.0175f;
+	matrix[1][1] = 0.0001f;
+	matrix[2][2] = 4.0f;
+	matrix[2][3] = matrix[3][2] = -0.0175f;
+	matrix[3][3] = 0.0f;
+	matrix[4][4] = 2500.0f;
+	matrix[5][4] = matrix[5][4] = -0.0175f;
+	matrix[5][5] = 1.6e-7;
+	spFilePointer f =  SDL_RWFromFile("./Default.matrix","rb");
+	if (f)
+	{
+		int i;
+		for (i = 0; i < 6; i++)
+		{
+			char buffer[256];
+			char* line = buffer;
+			spReadOneLine(f,line,255);
+			int j;
+			for (j = 0; j < 6; j++)
+			{
+				matrix[j][i] = atof(line);
+				char* oldline = line;
+				line = strchr(oldline,' ');
+				line = &(line[1]);
+				if (line == NULL)
+				{
+					line = &(line[1]);
+					line = strchr(oldline,'\n');
+					if (line == NULL)
+						break;
+				}
+			}
+		}
+		SDL_FreeRW(f);
+	}
+	float A = matrix[0][1];
+	float B = matrix[0][0];
+	float C = matrix[1][1];
 	float epsilon = sqrt(C*B-A*A);
-	initPhasenraum(raum,A/(-epsilon),B/epsilon,epsilon);
+	initPhasenraum(X,A/(-epsilon),B/epsilon,epsilon,color1);
+	A = matrix[2][3];
+	B = matrix[2][2];
+	C = matrix[3][3];
+	epsilon = sqrt(C*B-A*A);
+	initPhasenraum(Y,A/(-epsilon),B/epsilon,epsilon,color2);
+	A = matrix[4][5];
+	B = matrix[4][4];
+	C = matrix[5][5];
+	epsilon = sqrt(C*B-A*A);
+	initPhasenraum(Z,A/(-epsilon),B/epsilon,epsilon,color3);
 }
 
 void drawPhasenraumEllipse(tPhasenraum* raum,int x1,int y1,int x2,int y2)
@@ -93,8 +156,8 @@ void drawPhasenraumEllipse(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 				}
 				spRectangle(x1+X,y1+Y,0,w,h,color);
 			}
-	line(x1,my,0,x2,my,0);
-	line(mx,y1,0,mx,y2,0);
+	line(x1,my,0,x2,my,0,raum->color);
+	line(mx,y1,0,mx,y2,0,raum->color);
 	//Marching squares
 	for (x = 0; x < RASTER_X; x++)
 	{
@@ -107,7 +170,7 @@ void drawPhasenraumEllipse(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 			drawMarchingLine(X_1,Y_1,raum->marching_points[x  ][y  ],
 			                 X_2,Y_1,raum->marching_points[x+1][y  ],
 			                 X_2,Y_2,raum->marching_points[x+1][y+1],
-							 X_1,Y_2,raum->marching_points[x  ][y+1],65535);
+							 X_1,Y_2,raum->marching_points[x  ][y+1],raum->color);
 		}
 	}
 }
@@ -127,7 +190,7 @@ void drawPhasenraumParticles(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 		int x = (int)(raum->particle[0][i]*one/2.0f) + mx;
 		int y = (int)(raum->particle[1][i]*one/2.0f) + my;
 		if (x > x1 && x < x2 && y > y1 && y < y2)
-			spEllipse(x,y,0,2,2,spGetRGB(0,255,127));
+			spEllipse(x,y,0,2,2,raum->color);
 	}
 }
 
@@ -137,16 +200,15 @@ void drawPhasenraumInformation(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 	int my = y1+y2 >> 1;
 	int w = x2-x1;
 	int h = y2-y1;
-	float ATAN = 2.0f*raum->alpha/(raum->gamma-raum->beta);
-	float phi = atan(ATAN)/2.0f;
+	float phi = calc_phi(raum->alpha,raum->beta,raum->gamma);
 	float size_factor = spFixedToFloat(spGetSizeFactor());
 	spSetAlphaTest(1);
 	char buffer[256];
 	
 	line(mx-(int)(cos(phi)*size_factor*30.0f),my-(int)(sin(phi)*size_factor*30.0f),0,
-	     mx+(int)(cos(phi)*size_factor*30.0f),my+(int)(sin(phi)*size_factor*30.0f),0);
+	     mx+(int)(cos(phi)*size_factor*30.0f),my+(int)(sin(phi)*size_factor*30.0f),0,raum->color);
 	line(mx-(int)(cos(phi+M_PI/2.0f)*size_factor*30.0f),my-(int)(sin(phi+M_PI/2.0f)*size_factor*30.0f),0,
-	     mx+(int)(cos(phi+M_PI/2.0f)*size_factor*30.0f),my+(int)(sin(phi+M_PI/2.0f)*size_factor*30.0f),0);
+	     mx+(int)(cos(phi+M_PI/2.0f)*size_factor*30.0f),my+(int)(sin(phi+M_PI/2.0f)*size_factor*30.0f),0,raum->color);
 
 	int one;
 	if (x2-x1 < y2-y1)
@@ -157,26 +219,26 @@ void drawPhasenraumInformation(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 	int x = (int)(-raum->alpha*sqrt(raum->epsilon/raum->gamma)*(float)one)/2;
 	int y = (int)(sqrt(raum->epsilon*raum->gamma)*(float)one)/2;
 	line( x1+w*19/40+x, y1+h/2+y, 0,
-	      x1+w*21/40+x, y1+h/2+y, 0);
+	      x1+w*21/40+x, y1+h/2+y, 0,raum->color);
 	line( x1+w*19/40-x, y1+h/2-y, 0,
-	      x1+w*21/40-x, y1+h/2-y, 0);
+	      x1+w*21/40-x, y1+h/2-y, 0,raum->color);
 
 	x = (int)(sqrt(raum->epsilon*raum->beta)*(float)one)/2;
 	y = (int)(-raum->alpha*sqrt(raum->epsilon/raum->beta)*(float)one)/2;
 	line( x1+w/2+x, y1+h*19/40+y, 0,
-	      x1+w/2+x, y1+h*21/40+y, 0);
+	      x1+w/2+x, y1+h*21/40+y, 0,raum->color);
 	line( x1+w/2-x, y1+h*19/40-y, 0,
-	      x1+w/2-x, y1+h*21/40-y, 0);
+	      x1+w/2-x, y1+h*21/40-y, 0,raum->color);
 
 	y = (int)(sqrt(raum->epsilon/raum->beta)*(float)one)/2;
 	line(x1+w*19/40,my-y,0,
-	     x1+w*21/40,my-y,0); 
+	     x1+w*21/40,my-y,0,raum->color); 
 	sprintf(buffer,"√(ε/β)=%.3f",sqrt(raum->epsilon/raum->beta));
 	spFontDrawMiddle(mx,my-y-font->maxheight,0,buffer,font);
 
 	x = (int)(sqrt(raum->epsilon/raum->gamma)*(float)one)/2;
 	line(mx+x,y1+h*19/40,0,
-	     mx+x,y1+h*21/40,0);
+	     mx+x,y1+h*21/40,0,raum->color);
 	sprintf(buffer," √(ε/γ)=%.3f",sqrt(raum->epsilon/raum->gamma));
 	spFontDraw(mx+x,my-font->maxheight/2,0,buffer,font);
 	
@@ -221,7 +283,7 @@ void calcPhasenraum(tPhasenraum* raum,int x1,int y1,int x2,int y2,int steps)
 {
 	int w = x2-x1;
 	int h = y2-y1;
-	float ONE_STEP = 1.0f/(float)one_step;
+	float ONE_STEP = spFixedToFloat(SP_ONE>>one_step);
 	if (!pause)
 		s += (float)steps*ONE_STEP;
 	raum->beta = Cf(s)*Cf(s)*raum->start_beta
@@ -233,6 +295,25 @@ void calcPhasenraum(tPhasenraum* raum,int x1,int y1,int x2,int y2,int steps)
 	raum->gamma = Cd(s)*Cd(s)*raum->start_beta
 		        + -2.0f*Sd(s)*Cd(s)*raum->start_alpha
 		        + Sd(s)*Sd(s)*raum->start_gamma;
+	float phi = calc_phi(raum->alpha,raum->beta,raum->gamma);
+	float SIN = -sin(phi);
+	float COS = cos(phi);
+	float a=sqrt(raum->epsilon/(raum->gamma*COS*COS-2.0f*raum->alpha*COS*SIN+raum->beta*SIN*SIN));
+	float b=sqrt(raum->epsilon/(raum->gamma*SIN*SIN+2.0f*raum->alpha*COS*SIN+raum->beta*COS*COS));
+	/*float matrix[2][2] = {{a*COS,b*SIN},{a*-SIN,b*COS}};//{{COS,SIN},{-SIN,COS}};
+	#ifdef NO_BLAS
+	int i;
+	for (i = 0; i < PARTICLE_COUNT; i++)
+	{
+		raum->particle[0][i] = raum->start_particle[0][i]*matrix[0][0]
+		                     + raum->start_particle[1][i]*matrix[0][1];
+		raum->particle[1][i] = raum->start_particle[0][i]*matrix[1][0]
+		                     + raum->start_particle[1][i]*matrix[1][1];
+	}
+	#else
+		cblas_sgemm( CblasRowMajor, CblasNoTrans, CblasNoTrans, 2, PARTICLE_COUNT, 2,
+					 1.0f, (float*)matrix, 2, (float*)raum->start_particle, PARTICLE_COUNT, 0.0f, (float*)raum->particle, PARTICLE_COUNT);
+	#endif*/
 	#ifdef NO_BLAS
 		int i;
 		for (i = 0; i < PARTICLE_COUNT; i++)
@@ -280,6 +361,8 @@ void calcPhasenraum(tPhasenraum* raum,int x1,int y1,int x2,int y2,int steps)
 
 void drawPhasenraumAll(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 {
+	if (!draw_field)
+		spRectangle(x1+x2>>1,y1+y2>>1,0,x2-x1,y2-y1,raum->color & 0b0011000110000110);
 	drawPhasenraumEllipse    (raum,x1,y1,x2,y2);
 	drawPhasenraumParticles  (raum,x1,y1,x2,y2);
 	drawPhasenraumInformation(raum,x1,y1,x2,y2);

@@ -77,7 +77,7 @@ void drawMarchingLine(int x1,int y1,float v1,
 	}
 }
 
-void line(int x1,int y1,int z1,int x2,int y2,int z2)
+void line(int x1,int y1,int z1,int x2,int y2,int z2,Uint16 color)
 {
 	spSetLineWidth(2);
 	spLine(x1,y1,z1,x2,y2,z2,spGetRGB(128,128,128));
@@ -85,15 +85,15 @@ void line(int x1,int y1,int z1,int x2,int y2,int z2)
 	if (x1 == x2)
 	{
 		if (y1 < y2)
-			spLine(x1,y1+1,z1,x2,y2-1,z2,65535);
+			spLine(x1,y1+1,z1,x2,y2-1,z2,color);
 		else
-			spLine(x1,y1-1,z1,x2,y2+1,z2,65535);
+			spLine(x1,y1-1,z1,x2,y2+1,z2,color);
 	}
 	else
 	{
 		if (x1 < x2)
-			spLine(x1+1,y1,z1,x2-1,y2,z2,65535);
+			spLine(x1+1,y1,z1,x2-1,y2,z2,color);
 		else
-			spLine(x1-1,y1,z1,x2+1,y2,z2,65535);
+			spLine(x1-1,y1,z1,x2+1,y2,z2,color);
 	}
 }
