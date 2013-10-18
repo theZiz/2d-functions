@@ -1,2 +1,8 @@
-- Buncher auf Knopfdruck
-- Rotationsbug
+- Alpha, Beta, Gamma und Epsilon von Elbe vor und nach Bauteilimpakt betrachten
+- Umbenennen
+- Solenoid von Elbe einbauen und bei Knopfdruck anwenden
+- Bauteil-Auswahl einbauen
+- Bauteile hinzufügen:
+	- Quadrupol
+	- Buncher
+	- Rest (siehe Zettel)
