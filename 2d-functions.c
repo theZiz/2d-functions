@@ -46,6 +46,7 @@ void draw(void)
 	spFontDrawMiddle(screen->w/2,font->maxheight*2,0,"[d] Restart",font);
 	spFontDrawMiddle(screen->w/2,font->maxheight*3,0,"[a] Colorful!",font);
 
+	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*4,0,"[s] Element!",font);
 	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*3,0,"[w] Switch ELBE / Test values",font);
 	if (one_step > 0)
 		sprintf(buffer,SP_PAD_NAME": Speed: 2^%i=%.5f",-one_step,spFixedToFloat(SP_ONE>>one_step));
@@ -71,10 +72,6 @@ int calc(Uint32 steps)
 			spRotateX( -y*512 );
 		memcpy(rotation,spGetMatrix(),sizeof(Sint32)*16);
 	}
-	calcPhasenraum(&X_Raum,0,0,screen->w/2,screen->h/2,steps);
-	calcPhasenraum(&Y_Raum,screen->w/2+1,0,screen->w-1,screen->h/2,steps);
-	calcPhasenraum(&Z_Raum,0,screen->h/2+1,screen->w/2,screen->h-1,steps);
-	calcAll(&X_Raum,&Y_Raum,&Z_Raum,screen->w/2+1,screen->h/2+1,screen->w-1,screen->h-1,steps);
 	if (spGetInput()->axis[0] > 0 && one_step>-14)
 		one_step--;
 	if (spGetInput()->axis[0] < 0 && one_step< 15)
@@ -105,6 +102,21 @@ int calc(Uint32 steps)
 		}
 		spGetInput()->button[SP_BUTTON_UP_NOWASD] = 0;
 	}
+	if (spGetInput()->button[SP_BUTTON_DOWN_NOWASD])
+	{
+		resetPhasenraum(&X_Raum);
+		X_Raum.start_beta/=4.0f;
+		X_Raum.start_alpha/=2.0f;
+		int i;
+		for (i = 0; i < PARTICLE_COUNT; i++)
+		{
+			X_Raum.particle[1][i] = X_Raum.start_particle[1][i] *= 2.0f;
+		}		
+		resetPhasenraum(&Y_Raum);
+		resetPhasenraum(&Z_Raum);
+		s = 0.0f;
+		spGetInput()->button[SP_BUTTON_DOWN_NOWASD] = 0;
+	}
 	if (spGetInput()->button[SP_BUTTON_LEFT_NOWASD])
 	{
 		draw_field = 1-draw_field;
@@ -122,6 +134,10 @@ int calc(Uint32 steps)
 	}
 	if (spGetInput()->button[SP_BUTTON_SELECT_NOWASD])
 		return 1;
+	calcPhasenraum(&X_Raum,0,0,screen->w/2,screen->h/2,steps);
+	calcPhasenraum(&Y_Raum,screen->w/2+1,0,screen->w-1,screen->h/2,steps);
+	calcPhasenraum(&Z_Raum,0,screen->h/2+1,screen->w/2,screen->h-1,steps);
+	calcAll(&X_Raum,&Y_Raum,&Z_Raum,screen->w/2+1,screen->h/2+1,screen->w-1,screen->h-1,steps);
 	return 0;
 }
 

@@ -367,3 +367,11 @@ void drawPhasenraumAll(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 	drawPhasenraumParticles  (raum,x1,y1,x2,y2);
 	drawPhasenraumInformation(raum,x1,y1,x2,y2);
 }
+
+void resetPhasenraum(tPhasenraum* raum)
+{
+		raum->start_alpha = raum->alpha;
+		raum->start_beta = raum->beta;
+		raum->start_gamma = raum->gamma;
+		memcpy(raum->start_particle,raum->particle,sizeof(float)*2*PARTICLE_COUNT);
+}
