@@ -53,7 +53,7 @@ void dicePhasenraumParticles(tPhasenraum* raum)
 	}	
 }
 
-void initPhasenraum(tPhasenraum* raum,float start_alpha,float start_beta,float epsilon,Uint16 color)
+void initPhasenraum(tPhasenraum* raum,float start_alpha,float start_beta,float epsilon,Uint16 color,int dice)
 {
 	raum->epsilon = epsilon;
 	raum->start_alpha = start_alpha;
@@ -63,65 +63,8 @@ void initPhasenraum(tPhasenraum* raum,float start_alpha,float start_beta,float e
 	raum->beta = raum->start_beta;
 	raum->gamma = raum->start_gamma;
 	raum->color = color;
-	dicePhasenraumParticles(raum);
-}
-
-void loadPhasenraum(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,Uint16 color1,Uint16 color2,Uint16 color3)
-{
-	//ToDo: Load from file!
-	float matrix[6][6];
-	memset(matrix,0,sizeof(float)*36);
-	matrix[0][0] = 4.0f;
-	matrix[0][1] = matrix[1][0] = -0.0175f;
-	matrix[1][1] = 0.0001f;
-	matrix[2][2] = 4.0f;
-	matrix[2][3] = matrix[3][2] = -0.0175f;
-	matrix[3][3] = 0.0f;
-	matrix[4][4] = 2500.0f;
-	matrix[5][4] = matrix[5][4] = -0.0175f;
-	matrix[5][5] = 1.6e-7;
-	spFilePointer f =  SDL_RWFromFile("./Default.matrix","rb");
-	if (f)
-	{
-		int i;
-		for (i = 0; i < 6; i++)
-		{
-			char buffer[256];
-			char* line = buffer;
-			spReadOneLine(f,line,255);
-			int j;
-			for (j = 0; j < 6; j++)
-			{
-				matrix[j][i] = atof(line);
-				char* oldline = line;
-				line = strchr(oldline,' ');
-				line = &(line[1]);
-				if (line == NULL)
-				{
-					line = &(line[1]);
-					line = strchr(oldline,'\n');
-					if (line == NULL)
-						break;
-				}
-			}
-		}
-		SDL_FreeRW(f);
-	}
-	float A = matrix[0][1];
-	float B = matrix[0][0];
-	float C = matrix[1][1];
-	float epsilon = sqrt(C*B-A*A);
-	initPhasenraum(X,A/(-epsilon),B/epsilon,epsilon,color1);
-	A = matrix[2][3];
-	B = matrix[2][2];
-	C = matrix[3][3];
-	epsilon = sqrt(C*B-A*A);
-	initPhasenraum(Y,A/(-epsilon),B/epsilon,epsilon,color2);
-	A = matrix[4][5];
-	B = matrix[4][4];
-	C = matrix[5][5];
-	epsilon = sqrt(C*B-A*A);
-	initPhasenraum(Z,A/(-epsilon),B/epsilon,epsilon,color3);
+	if (dice)
+		dicePhasenraumParticles(raum);
 }
 
 void drawPhasenraumEllipse(tPhasenraum* raum,int x1,int y1,int x2,int y2)
@@ -370,8 +313,8 @@ void drawPhasenraumAll(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 
 void resetPhasenraum(tPhasenraum* raum)
 {
-		raum->start_alpha = raum->alpha;
-		raum->start_beta = raum->beta;
-		raum->start_gamma = raum->gamma;
-		memcpy(raum->start_particle,raum->particle,sizeof(float)*2*PARTICLE_COUNT);
+	raum->start_alpha = raum->alpha;
+	raum->start_beta = raum->beta;
+	raum->start_gamma = raum->gamma;
+	memcpy(raum->start_particle,raum->particle,sizeof(float)*2*PARTICLE_COUNT);
 }

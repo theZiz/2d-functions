@@ -45,6 +45,8 @@ void draw(void)
 	spFontDrawMiddle(screen->w/2,font->maxheight*1,0,"[R] Pause",font);
 	spFontDrawMiddle(screen->w/2,font->maxheight*2,0,"[d] Restart",font);
 	spFontDrawMiddle(screen->w/2,font->maxheight*3,0,"[a] Colorful!",font);
+	sprintf(buffer,"s: %.3f",s);
+	spFontDrawMiddle(screen->w/2,font->maxheight*4,0,buffer,font);
 
 	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*4,0,"[s] Element!",font);
 	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*3,0,"[w] Switch ELBE / Test values",font);
@@ -63,7 +65,7 @@ int calc(Uint32 steps)
 {
 	int x,y;
 	int mouse = SDL_GetRelativeMouseState(&x,&y);
-	if (mouse & SDL_BUTTON(SDL_BUTTON_RIGHT))
+	if (mouse & SDL_BUTTON(SDL_BUTTON_RIGHT) || mouse & SDL_BUTTON(SDL_BUTTON_LEFT) || mouse & SDL_BUTTON(SDL_BUTTON_MIDDLE))
 	{
 		memcpy(spGetMatrix(),rotation,sizeof(Sint32)*16);
 		if (x)
@@ -87,9 +89,9 @@ int calc(Uint32 steps)
 				one_step = 15;
 			zoom*=256.0f;
 			s = 0.0f;
-			initPhasenraum(&X_Raum,3.0f,5.0f,1.0f,spGetRGB(255,0,0));
-			initPhasenraum(&Y_Raum,4.0f,4.0f,1.5f,spGetRGB(0,255,0));
-			initPhasenraum(&Z_Raum,5.0f,3.0f,2.0f,spGetRGB(255,255,0));
+			initPhasenraum(&X_Raum,3.0f,5.0f,1.0f,spGetRGB(255,0,0),1);
+			initPhasenraum(&Y_Raum,4.0f,4.0f,1.5f,spGetRGB(0,255,0),1);
+			initPhasenraum(&Z_Raum,5.0f,3.0f,2.0f,spGetRGB(255,255,0),1);
 		}
 		else
 		{
@@ -98,23 +100,13 @@ int calc(Uint32 steps)
 				one_step =-14;
 			zoom/=256.0f;
 			s = 0.0f;
-			loadPhasenraum(&X_Raum,&Y_Raum,&Z_Raum,spGetRGB(255,0,0),spGetRGB(0,255,0),spGetRGB(255,255,0));
+			loadAll(&X_Raum,&Y_Raum,&Z_Raum,spGetRGB(255,0,0),spGetRGB(0,255,0),spGetRGB(255,255,0));
 		}
 		spGetInput()->button[SP_BUTTON_UP_NOWASD] = 0;
 	}
 	if (spGetInput()->button[SP_BUTTON_DOWN_NOWASD])
 	{
-		resetPhasenraum(&X_Raum);
-		X_Raum.start_beta/=4.0f;
-		X_Raum.start_alpha/=2.0f;
-		int i;
-		for (i = 0; i < PARTICLE_COUNT; i++)
-		{
-			X_Raum.particle[1][i] = X_Raum.start_particle[1][i] *= 2.0f;
-		}		
-		resetPhasenraum(&Y_Raum);
-		resetPhasenraum(&Z_Raum);
-		s = 0.0f;
+		all_new_matrix(&X_Raum,&Y_Raum,&Z_Raum);
 		spGetInput()->button[SP_BUTTON_DOWN_NOWASD] = 0;
 	}
 	if (spGetInput()->button[SP_BUTTON_LEFT_NOWASD])
@@ -181,9 +173,9 @@ void event(SDL_Event *e)
 int main(int argc, char **argv)
 {
 	srand(time(NULL));
-	initPhasenraum(&X_Raum,3.0f,5.0f,1.0f,spGetRGB(255,0,0));
-	initPhasenraum(&Y_Raum,4.0f,4.0f,1.5f,spGetRGB(0,255,0));
-	initPhasenraum(&Z_Raum,5.0f,3.0f,2.0f,spGetRGB(255,255,0));
+	initPhasenraum(&X_Raum,3.0f,5.0f,1.0f,spGetRGB(255,0,0),1);
+	initPhasenraum(&Y_Raum,4.0f,4.0f,1.5f,spGetRGB(0,255,0),1);
+	initPhasenraum(&Z_Raum,5.0f,3.0f,2.0f,spGetRGB(255,255,0),1);
 	spSetDefaultWindowSize( WINDOW_X, WINDOW_Y );
 	spInitCore();
 	screen = spCreateDefaultWindow();

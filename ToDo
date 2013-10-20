@@ -1,4 +1,5 @@
 - Alpha, Beta, Gamma und Epsilon von Elbe vor und nach Bauteilimpakt betrachten
+	- PROBLEM: Wieso verändert sich σ[0][0]? Der Elipsoid bleibt eigentlich (erstmal) wie gehabt!
 - Umbenennen
 - Solenoid von Elbe einbauen und bei Knopfdruck anwenden
 - Bauteil-Auswahl einbauen
