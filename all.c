@@ -240,9 +240,11 @@ void calcAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,i
 		Sint32 z = spFloatToFixed(Z->particle[0][i]);
 		Uint16 color = spGetHSV((int)((float)SP_PI*(value*2.0f/3.0f)),255,255);
 		#ifdef TRANSPARENCY
-		spSetAlphaPattern4x4(128,allTransparency[i]);
-		#endif
+		spSetAlphaPattern4x4(spFixedToFloat(spFloatToFixed(value*255)),allTransparency[i]);
+		spEllipse3D(x,y,z,SP_ONE/32,SP_ONE/32, color);
+		#else
 		spEllipse3D(x,y,z,SP_ONE/64,SP_ONE/64, color);
+		#endif
 	}
 	#ifdef TRANSPARENCY
 	spDeactivatePattern();
