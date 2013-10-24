@@ -1,3 +1,7 @@
+#ifdef TRANSPARENCY
+int allTransparency[PARTICLE_COUNT];
+#endif
+
 void fill_all_from_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,pMatrix matrix,Uint16 color1,Uint16 color2,Uint16 color3,int dice)
 {
 	float A = (*matrix)[0][1];
@@ -63,7 +67,55 @@ void loadAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,Uint16 color1,Uint16 c
 
 void drawAllEllipse(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,int y2)
 {
-	spBlitSurface(x1+x2>>1,y1+y2>>1,0,threeD);
+	#ifdef TRANSPARENCY
+	spScaleDownSmooth(threeD_render,threeD_draw);
+	#endif
+	spBlitSurface(x1+x2>>1,y1+y2>>1,0,threeD_draw);
+}
+
+void fill_matrix_quadrupole(pMatrix matrix,float I)
+{
+	memset((*matrix),0,sizeof(float)*36);
+
+	float energy = 250000.0f*0.000001602176565f; //Count * Q
+	float k = -153.8f*I/(energy*0.6242f-0.511f)/1000000.0f; //1/mm²
+	float L = 100.0f; //mm
+	(*matrix)[0][0] = 1.0f;
+	(*matrix)[1][1] = 1.0f;
+	(*matrix)[2][2] = 1.0f;
+	(*matrix)[3][3] = 1.0f;
+	(*matrix)[4][4] = 1.0f;
+	(*matrix)[5][5] = 1.0f;
+	(*matrix)[1][0] = -k*L;
+	(*matrix)[3][2] = k*L;
+	(*matrix)[4][5] = 1.0;
+}
+
+void fill_matrix_buncher(pMatrix matrix,float a, float U, float phi, float f)
+{
+	memset((*matrix),0,sizeof(float)*36);
+
+	phi = M_PI * phi / 180.0f;
+
+	float ekin = 250000.0f*0.000001602176565f; //Count * Q
+	float gamma = ekin/0.818710438f+1.0f;
+	float beta = sqrt(1.0f-1.0f/(gamma*gamma));
+	
+	float w1 = ekin;
+	float w0 = 0.000001602176565f * U * cos(phi); // Q*O*cos(phi)
+	float lambda = 299792458000.0f / f; // c/f
+	float r65 = sin(phi) * (2 * M_PI * 0.000001602176565f * U)/((w1 + w0) * beta * lambda);
+
+	(*matrix)[0][0] = 1.0f;
+	(*matrix)[0][1] = a;
+	(*matrix)[1][1] = 1.0f;
+	(*matrix)[2][2] = 1.0f;
+	(*matrix)[2][3] = a;
+	(*matrix)[3][3] = 1.0f;
+	(*matrix)[4][4] = 1.0f;
+	(*matrix)[4][5] = a / (gamma * gamma);
+	(*matrix)[5][4] = r65;
+	(*matrix)[5][5] = w1 / (w1 + w0);
 }
 
 void fill_matrix_solenoid(pMatrix matrix,float I)
@@ -144,15 +196,24 @@ void drawAllAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x
 
 void updateThreeD(int w,int h)
 {
-	if (threeD)
-		spDeleteSurface(threeD);
-	threeD = spCreateSurface(w,h);
+	if (threeD_draw)
+		spDeleteSurface(threeD_draw);
+	#ifdef TRANSPARENCY
+	if (threeD_render)
+		spDeleteSurface(threeD_render);
+	#endif
+	threeD_draw = spCreateSurface(w,h);
+	#ifdef TRANSPARENCY
+	threeD_render = spCreateSurface(w*2,h*2);
+	#else
+	threeD_render = threeD_draw;
+	#endif
 	spSetPerspective( 45.0, ( float )w / ( float )h, 1.0f, 10000.0f );
 }
 
 void calcAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,int y2,int steps)
 {
-	spSelectRenderTarget(threeD);
+	spSelectRenderTarget(threeD_render);
 	spSetZSet(1);
 	spSetZTest(1);
 	spResetZBuffer();
@@ -163,9 +224,8 @@ void calcAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,i
 	{
 		allZoom*=256.0f;
 	}
-	spTranslate(0,0,spFloatToFixed(-4.0f)*allZoom);
+	spTranslate(0,0,spFloatToFixed(-1.0f)+spFloatToFixed(-4.0f*allZoom));
 	spMulMatrix(rotation);
-	Sint32 size = spFloatToFixed(1.0f / ( 1.0f + allZoom ) +1.0f)/32;
 	int i;
 	for (i = 0; i < PARTICLE_COUNT; i+=PARTICLE_NEXT_DRAW)
 	{
@@ -179,13 +239,20 @@ void calcAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,i
 		Sint32 y = spFloatToFixed(Y->particle[0][i]);
 		Sint32 z = spFloatToFixed(Z->particle[0][i]);
 		Uint16 color = spGetHSV((int)((float)SP_PI*(value*2.0f/3.0f)),255,255);
-		spEllipse3D(x,y,z,size,size, color);
+		#ifdef TRANSPARENCY
+		spSetAlphaPattern4x4(128,allTransparency[i]);
+		#endif
+		spEllipse3D(x,y,z,SP_ONE/64,SP_ONE/64, color);
 	}
+	#ifdef TRANSPARENCY
+	spDeactivatePattern();
+	#endif
 	spSetBlending(SP_ONE/2);
 	spSetLineWidth(4);
-	spLine3D(-SP_ONE*zoom,0,0,SP_ONE*allZoom,0,0,X->color);
-	spLine3D(0,-SP_ONE*zoom,0,0,SP_ONE*allZoom,0,Y->color);
-	spLine3D(0,0,-SP_ONE*zoom,0,0,SP_ONE*allZoom,Z->color);
+	Sint32 lineSize = spMul(SP_ONE/3,spFloatToFixed(-1.0f)+spFloatToFixed(-4.0f*allZoom));
+	spLine3D(-lineSize,0,0,lineSize,0,0,X->color);
+	spLine3D(0,-lineSize,0,0,lineSize,0,Y->color);
+	spLine3D(0,0,-lineSize,0,0,lineSize,Z->color);
 	spSetBlending(SP_ONE);
 	spSetLineWidth(1);
 	spSetZSet(0);
@@ -203,7 +270,7 @@ void calculate_matrix(pMatrix new_matrix,pMatrix old_matrix,pMatrix change_matri
 	mul_matrix_trans(&temp,change_matrix,new_matrix);	
 
 	int x,y;
-	printf("Change:\n");
+	/*printf("Change:\n");
 	for (y = 0; y < 6; y++)
 	{
 			printf("|");
@@ -238,7 +305,7 @@ void calculate_matrix(pMatrix new_matrix,pMatrix old_matrix,pMatrix change_matri
 					printf(" %06.3f |",(*new_matrix)[x][y]);
 			printf("\n");
 	}
-	printf("\n");
+	printf("\n");*/
 }
 
 void rotate_points_to_zero(tPhasenraum* raum)
@@ -290,19 +357,42 @@ void all_new_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z)
 	//Getting the change matrix:
 	tMatrix change_matrix;
 	if (test_values == 0)
-		fill_matrix_solenoid(&change_matrix,1.05f);
+	switch (element)
+	{
+		case 0: fill_matrix_solenoid(&change_matrix,1.0f); break;
+		case 1: fill_matrix_buncher(&change_matrix,40.0f,19000.0f,-90.0f,260000000.0f); break;
+		case 2: fill_matrix_buncher(&change_matrix,40.0f,12000.0f,+90.0f,1300000000.0f); break;
+		case 3: fill_matrix_quadrupole(&change_matrix,+0.2f); break;
+		case 4: fill_matrix_quadrupole(&change_matrix,-0.2f); break;
+	}
 	else
-		fill_matrix_solenoid(&change_matrix,10.5f);
-	//Getting the old matrix
+	switch (element)
+	{
+		case 0: fill_matrix_solenoid(&change_matrix,10.0f); break;
+		case 1: fill_matrix_buncher(&change_matrix,0.01f,19000.0f,-90.0f,260000000.0f); break;
+		case 2: fill_matrix_buncher(&change_matrix,0.01f,12000.0f,+90.0f,1300000000.0f); break;
+		case 3: fill_matrix_quadrupole(&change_matrix,+0.2f); break;
+		case 4: fill_matrix_quadrupole(&change_matrix,-0.2f); break;
+	}
+	/*//Getting the old matrix, will already be there in ELBE
 	tMatrix old_matrix;
 	fill_matrix_current(&old_matrix,X,Y,Z);
-	//Calculating the new matrix:
+	//Calculating the new matrix, this ELBE already does, too
 	tMatrix new_matrix;
-	calculate_matrix(&new_matrix,&old_matrix,&change_matrix);
+	calculate_matrix(&new_matrix,&old_matrix,&change_matrix);*/
+	resetPhasenraumDrift(X);
+	resetPhasenraumDrift(Y);
+	resetPhasenraumDrift(Z);
 	
-	printf("%f --- %f\n",old_matrix[0][1],new_matrix[0][1]);
+	multiplyMatrixPhasenraum(X,change_matrix[0][0],change_matrix[0][1],change_matrix[1][0],change_matrix[1][1]);
+	multiplyMatrixPhasenraum(Y,change_matrix[2][2],change_matrix[2][3],change_matrix[3][2],change_matrix[3][3]);
+	multiplyMatrixPhasenraum(Z,change_matrix[4][4],change_matrix[4][5],change_matrix[5][4],change_matrix[5][5]);
         	
-	float phi = calc_phi(X->alpha,X->beta,X->gamma);
+	resetPhasenraumDrift(X);
+	resetPhasenraumDrift(Y);
+	resetPhasenraumDrift(Z);
+
+	/*float phi = calc_phi(X->alpha,X->beta,X->gamma);
 	float SIN = -sin(phi); float COS = cos(phi);
 	float X_a=sqrt(X->epsilon/(X->gamma*COS*COS-2.0f*X->alpha*COS*SIN+X->beta*SIN*SIN));
 	float X_b=sqrt(X->epsilon/(X->gamma*SIN*SIN+2.0f*X->alpha*COS*SIN+X->beta*COS*COS));
@@ -330,6 +420,6 @@ void all_new_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z)
 
 	memcpy(X->start_particle,X->particle,sizeof(float)*2*PARTICLE_COUNT);
 	memcpy(Y->start_particle,Y->particle,sizeof(float)*2*PARTICLE_COUNT);
-	memcpy(Z->start_particle,Z->particle,sizeof(float)*2*PARTICLE_COUNT);
+	memcpy(Z->start_particle,Z->particle,sizeof(float)*2*PARTICLE_COUNT);*/
 	s = 0.0f;
 }

@@ -1,7 +1,4 @@
-- Umbenennen
-- Solenoid von Elbe einbauen und bei Knopfdruck anwenden
-- Bauteil-Auswahl einbauen
-- Bauteile hinzufügen:
-	- Quadrupol
-	- Buncher
-	- Rest (siehe Zettel)
+- Überprüfung der Rotation durch Aufsplittung der Elementanwendung in:
+	- 0-Positions-Rotation
+	- Anwendung
+	- Rückrotation

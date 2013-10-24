@@ -8,7 +8,8 @@
 #include "defines.h"
 
 SDL_Surface* screen;
-SDL_Surface* threeD = NULL;
+SDL_Surface* threeD_render = NULL;
+SDL_Surface* threeD_draw = NULL;
 spFontPointer font = NULL;
 float zoom = 2.0f;
 float s = 0.0f;
@@ -17,6 +18,7 @@ int pause = 1;
 int draw_field = 0;
 Sint32 rotation[16];
 int test_values = 1;
+int element = 0; //0 Solenoid, 1 Quadrupole, 2 Quadrupole, 3 Buncher, 4 Buncher
 
 #include "matrix.c"
 #include "helpers.c"
@@ -48,7 +50,25 @@ void draw(void)
 	sprintf(buffer,"s: %.3f",s);
 	spFontDrawMiddle(screen->w/2,font->maxheight*4,0,buffer,font);
 
-	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*4,0,"[s] Element!",font);
+	if (test_values == 0)
+	switch (element)
+	{
+		case 0: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: Solenoid with I=1A",font); break;
+		case 1: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: -90°-260Mhz-Buncher with U=20kV",font); break;
+		case 2: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: +90°-1300Mhz-Buncher with U=10kV",font); break;
+		case 3: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: Quadrupole with I=+0.2A",font); break;
+		case 4: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: Quadrupole with I=-0.2A",font); break;
+	}
+	else
+	switch (element)
+	{
+		case 0: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: Solenoid with I=10A",font); break;
+		case 1: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: -90°-Buncher with U=20kV",font); break;
+		case 2: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: +90°-Buncher with U=10kV",font); break;
+		case 3: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: Quadrupole with I=+0.2A",font); break;
+		case 4: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: Quadrupole with I=-0.2A",font); break;
+	}
+	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*4,0,"[s] Apply! (Change with "SP_PAD_NAME")",font);
 	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*3,0,"[w] Switch ELBE / Test values",font);
 	if (one_step > 0)
 		sprintf(buffer,SP_PAD_NAME": Speed: 2^%i=%.5f",-one_step,spFixedToFloat(SP_ONE>>one_step));
@@ -67,13 +87,19 @@ int calc(Uint32 steps)
 	int mouse = SDL_GetRelativeMouseState(&x,&y);
 	if (mouse & SDL_BUTTON(SDL_BUTTON_RIGHT) || mouse & SDL_BUTTON(SDL_BUTTON_LEFT) || mouse & SDL_BUTTON(SDL_BUTTON_MIDDLE))
 	{
-		memcpy(spGetMatrix(),rotation,sizeof(Sint32)*16);
+		spIdentity();
 		if (x)
-			spRotateY( -x*512 );
+			spRotateY( x*512 );
 		if (y)
-			spRotateX( -y*512 );
+			spRotateX( y*512 );
+		spMulMatrix(rotation);
 		memcpy(rotation,spGetMatrix(),sizeof(Sint32)*16);
 	}
+	if (spGetInput()->axis[1] > 0)
+		element = (element+1)%5;
+	if (spGetInput()->axis[1] < 0)
+		element = (element+4)%5;
+	spGetInput()->axis[1] = 0;
 	if (spGetInput()->axis[0] > 0 && one_step>-14)
 		one_step--;
 	if (spGetInput()->axis[0] < 0 && one_step< 15)
@@ -189,8 +215,16 @@ int main(int argc, char **argv)
 	spRotateY(SP_PI/4);
 	spRotateZ(SP_PI/4);
 	memcpy(rotation,spGetMatrix(),sizeof(Sint32)*16);
+	#ifdef TRANSPARENCY
+	int i;
+	for (i = 0; i < PARTICLE_COUNT; i++)
+		allTransparency[i] = rand() & 63;
+	#endif
 	spLoop(draw,calc,10,resize,event);
-	spDeleteSurface(threeD);
+	spDeleteSurface(threeD_draw);
+	#ifdef TRANSPARENCY
+	spDeleteSurface(threeD_render);
+	#endif
 	spQuitCore();
 	return 0;
 }

@@ -133,7 +133,7 @@ void drawPhasenraumParticles(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 		int x = (int)(raum->particle[0][i]*one/2.0f) + mx;
 		int y = (int)(raum->particle[1][i]*one/2.0f) + my;
 		if (x > x1 && x < x2 && y > y1 && y < y2)
-			spEllipse(x,y,0,2,2,raum->color);
+			spEllipse(x,y,0,4,4,raum->color);
 	}
 }
 
@@ -222,6 +222,33 @@ void drawPhasenraumInformation(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 	draw_text(tx,ty+next_line*7,-1,buffer,font);
 }
 
+void multiplyMatrixPhasenraum(tPhasenraum* raum,float a,float b,float c,float d)
+{
+	raum->beta = a*a*raum->start_beta
+		       - 2.0f*a*b*raum->start_alpha
+		       + b*b*raum->start_gamma;
+	raum->alpha = -a*c*raum->start_beta
+		        + (a*d+b*c)*raum->start_alpha
+		        - b*d*raum->start_gamma;
+	raum->gamma = c*c*raum->start_beta
+		        - 2.0f*c*d*raum->start_alpha
+		        + d*d*raum->start_gamma;
+	#ifdef NO_BLAS
+		int i;
+		for (i = 0; i < PARTICLE_COUNT; i++)
+		{
+			raum->particle[0][i] = a*raum->start_particle[0][i]
+						         + b*raum->start_particle[1][i];
+			raum->particle[1][i] = c*raum->start_particle[0][i]
+			                     + d*raum->start_particle[1][i];
+		}
+	#else
+		float matrix[2][2] = {{a,b},{c,d}};
+		cblas_sgemm( CblasRowMajor, CblasNoTrans, CblasNoTrans, 2, PARTICLE_COUNT, 2,
+					 1.0f, (float*)matrix, 2, (float*)raum->start_particle, PARTICLE_COUNT, 0.0f, (float*)raum->particle, PARTICLE_COUNT);
+	#endif	
+}
+
 void calcPhasenraum(tPhasenraum* raum,int x1,int y1,int x2,int y2,int steps)
 {
 	int w = x2-x1;
@@ -229,48 +256,8 @@ void calcPhasenraum(tPhasenraum* raum,int x1,int y1,int x2,int y2,int steps)
 	float ONE_STEP = spFixedToFloat(SP_ONE>>one_step);
 	if (!pause)
 		s += (float)steps*ONE_STEP;
-	raum->beta = Cf(s)*Cf(s)*raum->start_beta
-		       + -2.0f*Sf(s)*Cf(s)*raum->start_alpha
-		       + Sf(s)*Sf(s)*raum->start_gamma;
-	raum->alpha = -Cf(s)*Cd(s)*raum->start_beta
-		        + (Sd(s)*Cf(s)+Sf(s)*Cd(s))*raum->start_alpha
-		        + -Sf(s)*Sd(s)*raum->start_gamma;
-	raum->gamma = Cd(s)*Cd(s)*raum->start_beta
-		        + -2.0f*Sd(s)*Cd(s)*raum->start_alpha
-		        + Sd(s)*Sd(s)*raum->start_gamma;
-	float phi = calc_phi(raum->alpha,raum->beta,raum->gamma);
-	float SIN = -sin(phi);
-	float COS = cos(phi);
-	float a=sqrt(raum->epsilon/(raum->gamma*COS*COS-2.0f*raum->alpha*COS*SIN+raum->beta*SIN*SIN));
-	float b=sqrt(raum->epsilon/(raum->gamma*SIN*SIN+2.0f*raum->alpha*COS*SIN+raum->beta*COS*COS));
-	/*float matrix[2][2] = {{a*COS,b*SIN},{a*-SIN,b*COS}};//{{COS,SIN},{-SIN,COS}};
-	#ifdef NO_BLAS
-	int i;
-	for (i = 0; i < PARTICLE_COUNT; i++)
-	{
-		raum->particle[0][i] = raum->start_particle[0][i]*matrix[0][0]
-		                     + raum->start_particle[1][i]*matrix[0][1];
-		raum->particle[1][i] = raum->start_particle[0][i]*matrix[1][0]
-		                     + raum->start_particle[1][i]*matrix[1][1];
-	}
-	#else
-		cblas_sgemm( CblasRowMajor, CblasNoTrans, CblasNoTrans, 2, PARTICLE_COUNT, 2,
-					 1.0f, (float*)matrix, 2, (float*)raum->start_particle, PARTICLE_COUNT, 0.0f, (float*)raum->particle, PARTICLE_COUNT);
-	#endif*/
-	#ifdef NO_BLAS
-		int i;
-		for (i = 0; i < PARTICLE_COUNT; i++)
-		{
-			raum->particle[0][i] = Cf(s)*raum->start_particle[0][i]
-						         + Sf(s)*raum->start_particle[1][i];
-			raum->particle[1][i] = Cd(s)*raum->start_particle[0][i]
-						         + Sd(s)*raum->start_particle[1][i];
-		}
-	#else
-		float matrix[2][2] = {{Cf(s),Sf(s)},{Cd(s),Sd(s)}};
-		cblas_sgemm( CblasRowMajor, CblasNoTrans, CblasNoTrans, 2, PARTICLE_COUNT, 2,
-					 1.0f, (float*)matrix, 2, (float*)raum->start_particle, PARTICLE_COUNT, 0.0f, (float*)raum->particle, PARTICLE_COUNT);
-	#endif
+	//Drift:
+	multiplyMatrixPhasenraum(raum,1.0f,s,0.0f,1.0f);
 	//update the marching points
 	int x,y;
 	float square_size;
@@ -309,4 +296,12 @@ void drawPhasenraumAll(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 	drawPhasenraumEllipse    (raum,x1,y1,x2,y2);
 	drawPhasenraumParticles  (raum,x1,y1,x2,y2);
 	drawPhasenraumInformation(raum,x1,y1,x2,y2);
+}
+
+void resetPhasenraumDrift(tPhasenraum* raum)
+{
+	raum->start_alpha = raum->alpha;
+	raum->start_beta = raum->beta;
+	raum->start_gamma = raum->gamma;
+	memcpy(raum->start_particle,raum->particle,sizeof(float)*2*PARTICLE_COUNT);	
 }
