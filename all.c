@@ -1,21 +1,18 @@
-#include "matrix.c"
-
-void fill_all_from_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,float* matrix,Uint16 color1,Uint16 color2,Uint16 color3,int dice)
+void fill_all_from_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,pMatrix matrix,Uint16 color1,Uint16 color2,Uint16 color3,int dice)
 {
-	//matrix[x*6+y]
-	float A = matrix[0*6+1];
-	float B = matrix[0*6+0];
-	float C = matrix[1*6+1];
+	float A = (*matrix)[0][1];
+	float B = (*matrix)[0][0];
+	float C = (*matrix)[1][1];
 	float epsilon = sqrt(C*B-A*A);
 	initPhasenraum(X,A/(-epsilon),B/epsilon,epsilon,color1,dice);
-	A = matrix[2*6+3];
-	B = matrix[2*6+2];
-	C = matrix[3*6+3];
+	A = (*matrix)[2][3];
+	B = (*matrix)[2][2];
+	C = (*matrix)[3][3];
 	epsilon = sqrt(C*B-A*A);
 	initPhasenraum(Y,A/(-epsilon),B/epsilon,epsilon,color2,dice);
-	A = matrix[4*6+5];
-	B = matrix[4*6+4];
-	C = matrix[5*6+5];
+	A = (*matrix)[4][5];
+	B = (*matrix)[4][4];
+	C = (*matrix)[5][5];
 	epsilon = sqrt(C*B-A*A);
 	initPhasenraum(Z,A/(-epsilon),B/epsilon,epsilon,color3,dice);
 }
@@ -23,7 +20,7 @@ void fill_all_from_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,float* ma
 void loadAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,Uint16 color1,Uint16 color2,Uint16 color3)
 {
 	//ToDo: Load from file!
-	float matrix[6][6];
+	tMatrix matrix;
 	memset(matrix,0,sizeof(float)*36);
 	matrix[0][0] = 4.0f;
 	matrix[0][1] = matrix[1][0] = -0.0175f;
@@ -61,7 +58,7 @@ void loadAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,Uint16 color1,Uint16 c
 		}
 		SDL_FreeRW(f);
 	}
-	fill_all_from_matrix(X,Y,Z,(float*)matrix,color1,color2,color3,1);
+	fill_all_from_matrix(X,Y,Z,&matrix,color1,color2,color3,1);
 }
 
 void drawAllEllipse(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,int y2)
@@ -69,35 +66,35 @@ void drawAllEllipse(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,i
 	spBlitSurface(x1+x2>>1,y1+y2>>1,0,threeD);
 }
 
-void fill_matrix_solenoid(float *matrix,float I)
+void fill_matrix_solenoid(pMatrix matrix,float I)
 {
 	float f = 344.6f / (I * I);
 
 	//matrix[y+x*6]
-	memset(matrix,0,sizeof(float)*36);
-	matrix[0] = 1.0f;
-	matrix[7] = 1.0f;
-	matrix[14] = 1.0f;
-	matrix[21] = 1.0f;
-	matrix[28] = 1.0f;
-	matrix[35] = 1.0f;
+	memset((*matrix),0,sizeof(float)*36);
+	(*matrix)[0][0] = 1.0f;
+	(*matrix)[1][1] = 1.0f;
+	(*matrix)[2][2] = 1.0f;
+	(*matrix)[3][3] = 1.0f;
+	(*matrix)[4][4] = 1.0f;
+	(*matrix)[5][5] = 1.0f;
 	
-	matrix[0+1*6] = matrix[2+3*6] = -1.0f / f;
+	(*matrix)[1][0] = (*matrix)[3][2] = -1.0f / f;
 }
 
-void fill_matrix_current(float *matrix,tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z)
+void fill_matrix_current(pMatrix matrix,tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z)
 {
 	//matrix[y+x*6]
-	memset(matrix,0,sizeof(float)*36);
-	matrix[0+1*6] = matrix[1+0*6] = -X->epsilon*X->alpha;
-	matrix[0+0*6] = X->epsilon*X->beta;
-	matrix[1+1*6] = X->epsilon*X->gamma;
-	matrix[3+2*6] = matrix[2+3*6] = -Y->epsilon*Y->alpha;
-	matrix[2+2*6] = Y->epsilon*Y->beta;
-	matrix[3+3*6] = Y->epsilon*Y->gamma;
-	matrix[4+5*6] = matrix[5+4*6] = -Z->epsilon*Z->alpha;
-	matrix[4+4*6] = Z->epsilon*Z->beta;
-	matrix[5+5*6] = Z->epsilon*Z->gamma;
+	memset((*matrix),0,sizeof(float)*36);
+	(*matrix)[1][0] = (*matrix)[0][1] = -X->epsilon*X->alpha;
+	(*matrix)[0][0] = X->epsilon*X->beta;
+	(*matrix)[1][1] = X->epsilon*X->gamma;
+	(*matrix)[2][3] = (*matrix)[3][2] = -Y->epsilon*Y->alpha;
+	(*matrix)[2][2] = Y->epsilon*Y->beta;
+	(*matrix)[3][3] = Y->epsilon*Y->gamma;
+	(*matrix)[5][4] = (*matrix)[4][5] = -Z->epsilon*Z->alpha;
+	(*matrix)[4][4] = Z->epsilon*Z->beta;
+	(*matrix)[5][5] = Z->epsilon*Z->gamma;
 }
 
 void drawAllInformation(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,int y2)
@@ -105,8 +102,8 @@ void drawAllInformation(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int 
 	int w = x2-x1;
 	int h = y2-y1;
 	char buffer[256];
-	float matrix[6][6];
-	fill_matrix_current((float*)matrix,X,Y,Z);
+	tMatrix matrix;
+	fill_matrix_current(&matrix,X,Y,Z);
 
 	int tx = x1;
 	int ty = y1;
@@ -196,83 +193,143 @@ void calcAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,i
 	spSelectRenderTarget(screen);
 }
 
-void mul_particles(tPhasenraum* raum,float mul)
-{
-	int i;
-		for (i = 0; i < PARTICLE_COUNT; i++)
-			raum->particle[1][i] *= mul;
-}
-
-void calculate_matrix(float* new_matrix,float* old_matrix,float* change_matrix)
+void calculate_matrix(pMatrix new_matrix,pMatrix old_matrix,pMatrix change_matrix)
 {
 	//temp[y+x*6]
-	float temp[36];
+	tMatrix temp;
 	//temp = change*old
-	mul_matrix(change_matrix,old_matrix,temp);	
+	mul_matrix(change_matrix,old_matrix,&temp);	
 	//new = temp*change.transpose;
-	mul_matrix_trans(temp,change_matrix,new_matrix);	
+	mul_matrix_trans(&temp,change_matrix,new_matrix);	
+
 	int x,y;
 	printf("Change:\n");
 	for (y = 0; y < 6; y++)
 	{
-		printf("|");
-		for (x = 0; x < 6; x++)
-			printf(" %06.3f |",change_matrix[x*6+y]);
-		printf("\n");
+			printf("|");
+			for (x = 0; x < 6; x++)
+					printf(" %06.3f |",(*change_matrix)[x][y]);
+			printf("\n");
 	}
 	printf("\n");
 	printf("Old:\n");
 	for (y = 0; y < 6; y++)
 	{
-		printf("|");
-		for (x = 0; x < 6; x++)
-			printf(" %06.3f |",old_matrix[x*6+y]);
-		printf("\n");
+			printf("|");
+			for (x = 0; x < 6; x++)
+					printf(" %06.3f |",(*old_matrix)[x][y]);
+			printf("\n");
 	}
 	printf("\n");
 	printf("Temp:\n");
 	for (y = 0; y < 6; y++)
 	{
-		printf("|");
-		for (x = 0; x < 6; x++)
-			printf(" %06.3f |",temp[x*6+y]);
-		printf("\n");
+			printf("|");
+			for (x = 0; x < 6; x++)
+					printf(" %06.3f |",temp[x][y]);
+			printf("\n");
 	}
 	printf("\n");
 	printf("New:\n");
 	for (y = 0; y < 6; y++)
 	{
-		printf("|");
-		for (x = 0; x < 6; x++)
-			printf(" %06.3f |",new_matrix[x*6+y]);
-		printf("\n");
+			printf("|");
+			for (x = 0; x < 6; x++)
+					printf(" %06.3f |",(*new_matrix)[x][y]);
+			printf("\n");
 	}
 	printf("\n");
+}
+
+void rotate_points_to_zero(tPhasenraum* raum)
+{
+	float phi = calc_phi(raum->alpha,raum->beta,raum->gamma);
+	float SIN = -sin(-phi);
+	float COS = cos(-phi);
+	int i;
+	for (i = 0; i < PARTICLE_COUNT; i++)
+	{
+		float x = raum->particle[0][i]* COS+raum->particle[1][i]*SIN;
+		float y = raum->particle[0][i]*-SIN+raum->particle[1][i]*COS;
+		raum->particle[0][i] = x;
+		raum->particle[1][i] = y;
+	}		
+}
+
+void rotate_points_to_angle(tPhasenraum* raum)
+{
+	float phi = calc_phi(raum->alpha,raum->beta,raum->gamma);
+	float SIN = -sin(phi);
+	float COS = cos(phi);
+	int i;
+	for (i = 0; i < PARTICLE_COUNT; i++)
+	{
+		float x = raum->particle[0][i]* COS+raum->particle[1][i]*SIN;
+		float y = raum->particle[0][i]*-SIN+raum->particle[1][i]*COS;
+		raum->particle[0][i] = x;
+		raum->particle[1][i] = y;
+	}		
+}
+
+void resize_points(tPhasenraum* raum,float old_a,float old_b)
+{
+	float phi = calc_phi(raum->alpha,raum->beta,raum->gamma);
+	float SIN = -sin(phi); float COS = cos(phi);
+	float a=sqrt(raum->epsilon/(raum->gamma*COS*COS-2.0f*raum->alpha*COS*SIN+raum->beta*SIN*SIN));
+	float b=sqrt(raum->epsilon/(raum->gamma*SIN*SIN+2.0f*raum->alpha*COS*SIN+raum->beta*COS*COS));
+	int i;
+	for (i = 0; i < PARTICLE_COUNT; i++)
+	{
+		raum->particle[0][i] *= a/old_a;
+		raum->particle[1][i] *= b/old_b;
+	}		
 }
 
 void all_new_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z)
 {
 	//Getting the change matrix:
-	float change_matrix[6][6];
-	fill_matrix_solenoid((float*)change_matrix,1.05f);
+	tMatrix change_matrix;
+	if (test_values == 0)
+		fill_matrix_solenoid(&change_matrix,1.05f);
+	else
+		fill_matrix_solenoid(&change_matrix,10.5f);
 	//Getting the old matrix
-	float old_matrix[6][6];
-	fill_matrix_current((float*)old_matrix,X,Y,Z);
+	tMatrix old_matrix;
+	fill_matrix_current(&old_matrix,X,Y,Z);
 	//Calculating the new matrix:
-	float new_matrix[6][6];
-	calculate_matrix((float*)new_matrix,(float*)old_matrix,(float*)change_matrix);
-	float X_old_high = sqrt(X->epsilon/X->beta);
-	float Y_old_high = sqrt(Y->epsilon/Y->beta);
-	float Z_old_high = sqrt(Z->epsilon/Z->beta);
-	fill_all_from_matrix(X,Y,Z,(float*)new_matrix,X->color,Y->color,Z->color,0);
-	float X_new_high = sqrt(X->epsilon/X->beta);
-	float Y_new_high = sqrt(Y->epsilon/Y->beta);
-	float Z_new_high = sqrt(Z->epsilon/Z->beta);
-	mul_particles(X,X_new_high/X_old_high);
-	mul_particles(Y,Y_new_high/Y_old_high);
-	mul_particles(Z,Z_new_high/Z_old_high);
-	resetPhasenraum(X);
-	resetPhasenraum(Y);
-	resetPhasenraum(Z);
+	tMatrix new_matrix;
+	calculate_matrix(&new_matrix,&old_matrix,&change_matrix);
+	
+	printf("%f --- %f\n",old_matrix[0][1],new_matrix[0][1]);
+        	
+	float phi = calc_phi(X->alpha,X->beta,X->gamma);
+	float SIN = -sin(phi); float COS = cos(phi);
+	float X_a=sqrt(X->epsilon/(X->gamma*COS*COS-2.0f*X->alpha*COS*SIN+X->beta*SIN*SIN));
+	float X_b=sqrt(X->epsilon/(X->gamma*SIN*SIN+2.0f*X->alpha*COS*SIN+X->beta*COS*COS));
+	phi = calc_phi(Y->alpha,Y->beta,Y->gamma);
+	SIN = -sin(phi); COS = cos(phi);
+	float Y_a=sqrt(Y->epsilon/(Y->gamma*COS*COS-2.0f*Y->alpha*COS*SIN+Y->beta*SIN*SIN));
+	float Y_b=sqrt(Y->epsilon/(Y->gamma*SIN*SIN+2.0f*Y->alpha*COS*SIN+Y->beta*COS*COS));
+	phi = calc_phi(Z->alpha,Z->beta,Z->gamma);
+	SIN = -sin(phi); COS = cos(phi);
+	float Z_a=sqrt(Z->epsilon/(Z->gamma*COS*COS-2.0f*Z->alpha*COS*SIN+Z->beta*SIN*SIN));
+	float Z_b=sqrt(Z->epsilon/(Z->gamma*SIN*SIN+2.0f*Z->alpha*COS*SIN+Z->beta*COS*COS));
+
+	rotate_points_to_zero(X);
+	rotate_points_to_zero(Y);
+	rotate_points_to_zero(Z);
+
+	fill_all_from_matrix(X,Y,Z,&new_matrix,X->color,Y->color,Z->color,0);
+
+	resize_points(X,X_a,X_b);
+	resize_points(Y,Y_a,Y_b);
+	resize_points(Z,Z_a,Z_b);
+	rotate_points_to_angle(X);
+	rotate_points_to_angle(Y);
+	rotate_points_to_angle(Z);
+
+	memcpy(X->start_particle,X->particle,sizeof(float)*2*PARTICLE_COUNT);
+	memcpy(Y->start_particle,Y->particle,sizeof(float)*2*PARTICLE_COUNT);
+	memcpy(Z->start_particle,Z->particle,sizeof(float)*2*PARTICLE_COUNT);
 	s = 0.0f;
 }

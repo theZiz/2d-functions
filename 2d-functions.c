@@ -18,7 +18,7 @@ int draw_field = 0;
 Sint32 rotation[16];
 int test_values = 1;
 
-
+#include "matrix.c"
 #include "helpers.c"
 #include "phasenraum.c"
 #include "all.c"

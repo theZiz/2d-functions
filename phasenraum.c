@@ -16,13 +16,13 @@ float calc_phi(float alpha,float beta,float gamma)
 {
 	float ATAN = 2.0f*alpha/(gamma-beta);
 	float phi = atan(ATAN)/2.0f;
-	/*if (gamma < beta)
+	if (gamma > beta)
 	{
 		if (alpha < 0.0f)
 			phi-=M_PI/2.0f;
 		else
 			phi+=M_PI/2.0f;
-	}*/
+	}
 	return phi;
 }
 
@@ -309,12 +309,4 @@ void drawPhasenraumAll(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 	drawPhasenraumEllipse    (raum,x1,y1,x2,y2);
 	drawPhasenraumParticles  (raum,x1,y1,x2,y2);
 	drawPhasenraumInformation(raum,x1,y1,x2,y2);
-}
-
-void resetPhasenraum(tPhasenraum* raum)
-{
-	raum->start_alpha = raum->alpha;
-	raum->start_beta = raum->beta;
-	raum->start_gamma = raum->gamma;
-	memcpy(raum->start_particle,raum->particle,sizeof(float)*2*PARTICLE_COUNT);
 }
