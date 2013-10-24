@@ -374,12 +374,6 @@ void all_new_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z)
 		case 3: fill_matrix_quadrupole(&change_matrix,+0.2f); break;
 		case 4: fill_matrix_quadrupole(&change_matrix,-0.2f); break;
 	}
-	/*//Getting the old matrix, will already be there in ELBE
-	tMatrix old_matrix;
-	fill_matrix_current(&old_matrix,X,Y,Z);
-	//Calculating the new matrix, this ELBE already does, too
-	tMatrix new_matrix;
-	calculate_matrix(&new_matrix,&old_matrix,&change_matrix);*/
 	resetPhasenraumDrift(X);
 	resetPhasenraumDrift(Y);
 	resetPhasenraumDrift(Z);
@@ -392,34 +386,5 @@ void all_new_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z)
 	resetPhasenraumDrift(Y);
 	resetPhasenraumDrift(Z);
 
-	/*float phi = calc_phi(X->alpha,X->beta,X->gamma);
-	float SIN = -sin(phi); float COS = cos(phi);
-	float X_a=sqrt(X->epsilon/(X->gamma*COS*COS-2.0f*X->alpha*COS*SIN+X->beta*SIN*SIN));
-	float X_b=sqrt(X->epsilon/(X->gamma*SIN*SIN+2.0f*X->alpha*COS*SIN+X->beta*COS*COS));
-	phi = calc_phi(Y->alpha,Y->beta,Y->gamma);
-	SIN = -sin(phi); COS = cos(phi);
-	float Y_a=sqrt(Y->epsilon/(Y->gamma*COS*COS-2.0f*Y->alpha*COS*SIN+Y->beta*SIN*SIN));
-	float Y_b=sqrt(Y->epsilon/(Y->gamma*SIN*SIN+2.0f*Y->alpha*COS*SIN+Y->beta*COS*COS));
-	phi = calc_phi(Z->alpha,Z->beta,Z->gamma);
-	SIN = -sin(phi); COS = cos(phi);
-	float Z_a=sqrt(Z->epsilon/(Z->gamma*COS*COS-2.0f*Z->alpha*COS*SIN+Z->beta*SIN*SIN));
-	float Z_b=sqrt(Z->epsilon/(Z->gamma*SIN*SIN+2.0f*Z->alpha*COS*SIN+Z->beta*COS*COS));
-
-	rotate_points_to_zero(X);
-	rotate_points_to_zero(Y);
-	rotate_points_to_zero(Z);
-
-	fill_all_from_matrix(X,Y,Z,&new_matrix,X->color,Y->color,Z->color,0);
-
-	resize_points(X,X_a,X_b);
-	resize_points(Y,Y_a,Y_b);
-	resize_points(Z,Z_a,Z_b);
-	rotate_points_to_angle(X);
-	rotate_points_to_angle(Y);
-	rotate_points_to_angle(Z);
-
-	memcpy(X->start_particle,X->particle,sizeof(float)*2*PARTICLE_COUNT);
-	memcpy(Y->start_particle,Y->particle,sizeof(float)*2*PARTICLE_COUNT);
-	memcpy(Z->start_particle,Z->particle,sizeof(float)*2*PARTICLE_COUNT);*/
 	s = 0.0f;
 }
