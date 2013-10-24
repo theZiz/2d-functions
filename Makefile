@@ -4,9 +4,9 @@ DYNAMIC = -lSDL_ttf -lSDL_mixer -lSDL_image -lSDL -lm
 CFLAGS = -O3 -fsingle-precision-constant -fPIC
 # Testtweaks: -fgcse-lm -fgcse-sm -fsched-spec-load -fmodulo-sched -funsafe-loop-optimizations -Wunsafe-loop-optimizations -fgcse-las -fgcse-after-reload -fvariable-expansion-in-unroller -ftracer -fbranch-target-load-optimize
 GENERAL_TWEAKS = -ffast-math
-GENERAL_TWEAKS += -DTRANSPARENCY
-GENERAL_TWEAKS += -DNO_BLAS
-# BLAS = -lblas
+# GENERAL_TWEAKS += -DTRANSPARENCY
+# GENERAL_TWEAKS += -DNO_BLAS
+BLAS = -lblas
 # BLAS = -lopenblas -L/usr/lib/openblas-base
 # BLAS =  -L/usr/lib/atlas-base/atlas/ -lblas
 #==PC==

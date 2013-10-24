@@ -133,7 +133,7 @@ void drawPhasenraumParticles(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 		int x = (int)(raum->particle[0][i]*one/2.0f) + mx;
 		int y = (int)(raum->particle[1][i]*one/2.0f) + my;
 		if (x > x1 && x < x2 && y > y1 && y < y2)
-			spEllipse(x,y,0,4,4,raum->color);
+			spEllipse(x,y,0,2,2,raum->color);
 	}
 }
 
