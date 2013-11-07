@@ -19,6 +19,10 @@ int draw_field = 0;
 Sint32 rotation[16];
 int test_values = 1;
 int element = 0; //0 Solenoid, 1 Quadrupole, 2 Quadrupole, 3 Buncher, 4 Buncher
+int colormode = 0;
+#ifdef TRANSPARENCY
+int allTransparency[PARTICLE_COUNT];
+#endif
 
 #include "colour.c"
 #include "matrix.c"
@@ -44,12 +48,23 @@ void draw(void)
 	line(0,screen->h/2,0,screen->w-1,screen->h/2,0,65535);
 	line(screen->w/2,0,0,screen->w/2,screen->h-1,0,65535);
 
+	spRotozoomSurface(screen->w*24/51,screen->h*16/32,0,spFontGetLetter(font,'E')->surface,spFloatToFixed(1.6f),spFloatToFixed(1.6f),0);
+	spRotozoomSurface(screen->w*25/51,screen->h*16/32,0,spFontGetLetter(font,'B')->surface,spFloatToFixed(1.6f),spFloatToFixed(1.6f),0);
+	spRotozoomSurface(screen->w*26/51,screen->h*16/32,0,spFontGetLetter(font,'B')->surface,spFloatToFixed(1.6f),spFloatToFixed(1.6f),0);
+	spRotozoomSurface(screen->w*27/51,screen->h*16/32,0,spFontGetLetter(font,'A')->surface,spFloatToFixed(1.6f),spFloatToFixed(1.6f),0);
+
 	spFontDrawMiddle(screen->w/2,font->maxheight*0,0,"[B] Exit",font);
 	spFontDrawMiddle(screen->w/2,font->maxheight*1,0,"[R] Pause",font);
 	spFontDrawMiddle(screen->w/2,font->maxheight*2,0,"[d] Restart",font);
 	spFontDrawMiddle(screen->w/2,font->maxheight*3,0,"[a] Colorful!",font);
+	switch (colormode)
+	{
+		case 0: spFontDrawMiddle(screen->w/2,font->maxheight*4,0,"[q]&[e] green-yellow-red",font); break;
+		case 1: spFontDrawMiddle(screen->w/2,font->maxheight*4,0,"[q]&[e] black-blue-white",font); break;
+		case 2: spFontDrawMiddle(screen->w/2,font->maxheight*4,0,"[q]&[e] orientation-mapping",font); break;
+	}
 	sprintf(buffer,"s: %.3f",s);
-	spFontDrawMiddle(screen->w/2,font->maxheight*4,0,buffer,font);
+	spFontDrawMiddle(screen->w/2,font->maxheight*5,0,buffer,font);
 
 	if (test_values == 0)
 	switch (element)
@@ -106,6 +121,16 @@ int calc(Uint32 steps)
 	if (spGetInput()->axis[0] < 0 && one_step< 15)
 		one_step++;
 	spGetInput()->axis[0] = 0;
+	if (spGetInput()->button[SP_BUTTON_L_NOWASD])
+	{
+		spGetInput()->button[SP_BUTTON_L_NOWASD] = 0;
+		colormode = (colormode+2)%3;
+	}
+	if (spGetInput()->button[SP_BUTTON_R_NOWASD])
+	{
+		spGetInput()->button[SP_BUTTON_R_NOWASD] = 0;
+		colormode = (colormode+1)%3;
+	}
 	if (spGetInput()->button[SP_BUTTON_UP_NOWASD])
 	{
 		test_values = 1-test_values;

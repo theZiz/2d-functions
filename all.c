@@ -1,7 +1,3 @@
-#ifdef TRANSPARENCY
-int allTransparency[PARTICLE_COUNT];
-#endif
-
 void fill_all_from_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,pMatrix matrix,Uint16 color1,Uint16 color2,Uint16 color3,int dice)
 {
 	float A = (*matrix)[0][1];
@@ -229,21 +225,10 @@ void calcAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,i
 	int i;
 	for (i = 0; i < PARTICLE_COUNT; i+=PARTICLE_NEXT_DRAW)
 	{
-		float length = sqrt(X->particle[1][i]*X->particle[1][i]+
-		                    Y->particle[1][i]*Y->particle[1][i]+
-		                    Z->particle[1][i]*Z->particle[1][i]);
-		if (test_values == 0)
-			length*=256.0f;
-		float value = 1.0f / ( 1.0f + length );
-		Sint32 x = spFloatToFixed(X->particle[0][i]);
-		Sint32 y = spFloatToFixed(Y->particle[0][i]);
-		Sint32 z = spFloatToFixed(Z->particle[0][i]);
-		Uint16 color = spGetHSV((int)((float)SP_PI*(value*2.0f/3.0f)),255,255);
 		#ifdef TRANSPARENCY
-		spSetAlphaPattern4x4(spFixedToFloat(spFloatToFixed(value*255)),allTransparency[i]);
-		spEllipse3D(x,y,z,SP_ONE/32,SP_ONE/32, color);
+		spEllipse3D(spFloatToFixed(X->particle[0][i]),spFloatToFixed(Y->particle[0][i]),spFloatToFixed(Z->particle[0][i]),SP_ONE/16,SP_ONE/16, get_colour(X->particle[1][i],Y->particle[1][i],Z->particle[1][i],i));
 		#else
-		spEllipse3D(x,y,z,SP_ONE/64,SP_ONE/64, color);
+		spEllipse3D(spFloatToFixed(X->particle[0][i]),spFloatToFixed(Y->particle[0][i]),spFloatToFixed(Z->particle[0][i]),SP_ONE/32,SP_ONE/32, get_colour(X->particle[1][i],Y->particle[1][i],Z->particle[1][i]));
 		#endif
 	}
 	#ifdef TRANSPARENCY
