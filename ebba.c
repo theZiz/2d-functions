@@ -20,6 +20,7 @@ Sint32 rotation[16];
 int test_values = 1;
 int element = 0; //0 Solenoid, 1 Quadrupole, 2 Quadrupole, 3 Buncher, 4 Buncher
 
+#include "colour.c"
 #include "matrix.c"
 #include "helpers.c"
 #include "phasenraum.c"
