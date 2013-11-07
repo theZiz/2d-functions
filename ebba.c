@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 	initPhasenraum(&Y_Raum,4.0f,4.0f,1.5f,spGetRGB(0,255,0),1);
 	initPhasenraum(&Z_Raum,5.0f,3.0f,2.0f,spGetRGB(255,255,0),1);
 	spSetDefaultWindowSize( WINDOW_X, WINDOW_Y );
-	spSetupWindowAttributes("EBBA - Electron Bunch Beamline Animation","ebba_32.png");
+	spSetupWindowAttributes("EBBA - Electron Bunch Beamline Animation","./ebba.png");
 	spInitCore();
 	screen = spCreateDefaultWindow();
 	resize( screen->w, screen->h );
