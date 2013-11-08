@@ -11,3 +11,7 @@
 
 //#define function(x,y) (x*x+y*y-1.0f)
 #define function(x,y) (raum->gamma*x*x+2.0f*raum->alpha*x*y+raum->beta*y*y-raum->epsilon)
+
+#define TRACK_COUNT 8
+#define TRACK_SIZE 2048
+#define TRACK_STEP 0.05f

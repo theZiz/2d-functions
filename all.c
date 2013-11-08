@@ -1,3 +1,5 @@
+#include "trace.c"
+
 void fill_all_from_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,pMatrix matrix,Uint16 color1,Uint16 color2,Uint16 color3,int dice)
 {
 	float A = (*matrix)[0][1];
@@ -213,7 +215,7 @@ void calcAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,i
 	spSetZSet(1);
 	spSetZTest(1);
 	spResetZBuffer();
-	spClearTarget( 0b0011000110000110 );
+	spClearTarget( 0b0100001000001000 );
 	spIdentity();
 	float allZoom = zoom;
 	if (test_values == 0)
@@ -223,6 +225,7 @@ void calcAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,i
 	spTranslate(0,0,spFloatToFixed(-1.0f)+spFloatToFixed(-4.0f*allZoom));
 	spMulMatrix(rotation);
 	int i;
+	if (showAll==0 || showAll==1)
 	for (i = 0; i < PARTICLE_COUNT; i+=PARTICLE_NEXT_DRAW)
 	{
 		#ifdef TRANSPARENCY
@@ -234,6 +237,13 @@ void calcAll(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,int x1,int y1,int x2,i
 	#ifdef TRANSPARENCY
 	spDeactivatePattern();
 	#endif
+	
+	if (showAll==1 || showAll==2)
+	{
+		updateTrace(X,Y,Z,steps);
+		drawTrace(X,Y,Z);
+	}
+	
 	spSetBlending(SP_ONE/2);
 	spSetLineWidth(4);
 	Sint32 lineSize = spMul(SP_ONE/3,spFloatToFixed(-1.0f)+spFloatToFixed(-4.0f*allZoom));

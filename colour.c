@@ -43,8 +43,12 @@ static Uint16 get_colour(float x,float y,float z)
 		else
 		{
 			v = (0.5f-value)*2.0f;
-			r = 0.25f + 0.75f*v;
-			g = 0.25f + 0.75f*v;
+			r = 0.25f + 1.25f*v;
+			if (r > 1.0f)
+				r = 1.0f;
+			g = 0.25f + 1.25f*v;
+			if (g > 1.0f)
+				g = 1.0f;
 			b = 1.0f;
 		}
 	}

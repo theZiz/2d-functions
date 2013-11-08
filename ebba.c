@@ -20,6 +20,7 @@ Sint32 rotation[16];
 int test_values = 1;
 int element = 0; //0 Solenoid, 1 Quadrupole, 2 Quadrupole, 3 Buncher, 4 Buncher
 int colormode = 0;
+int showAll = 0;
 #ifdef TRANSPARENCY
 int allTransparency[PARTICLE_COUNT];
 #endif
@@ -55,7 +56,7 @@ void draw(void)
 
 	spFontDrawMiddle(screen->w/2,font->maxheight*0,0,"[B] Exit",font);
 	spFontDrawMiddle(screen->w/2,font->maxheight*1,0,"[R] Pause",font);
-	spFontDrawMiddle(screen->w/2,font->maxheight*2,0,"[d] Restart",font);
+	spFontDrawMiddle(screen->w/2,font->maxheight*2,0,"[d] Toggle View",font);
 	spFontDrawMiddle(screen->w/2,font->maxheight*3,0,"[a] Colorful!",font);
 	switch (colormode)
 	{
@@ -154,6 +155,7 @@ int calc(Uint32 steps)
 			s = 0.0f;
 			loadAll(&X_Raum,&Y_Raum,&Z_Raum,spGetRGB(255,0,0),spGetRGB(0,255,0),spGetRGB(255,255,0));
 		}
+		initTrace(&X_Raum,&Y_Raum,&Z_Raum);		
 		spGetInput()->button[SP_BUTTON_UP_NOWASD] = 0;
 	}
 	if (spGetInput()->button[SP_BUTTON_DOWN_NOWASD])
@@ -168,7 +170,9 @@ int calc(Uint32 steps)
 	}
 	if (spGetInput()->button[SP_BUTTON_RIGHT_NOWASD])
 	{
-		s = 0.0f;
+		//if (showAll==0)
+		//	initTrace(&X_Raum,&Y_Raum,&Z_Raum);
+		showAll = (showAll+1)%3;
 		spGetInput()->button[SP_BUTTON_RIGHT_NOWASD] = 0;
 	}
 	if (spGetInput()->button[SP_BUTTON_START_NOWASD])
@@ -228,6 +232,7 @@ int main(int argc, char **argv)
 	initPhasenraum(&X_Raum,3.0f,5.0f,1.0f,spGetRGB(255,0,0),1);
 	initPhasenraum(&Y_Raum,4.0f,4.0f,1.5f,spGetRGB(0,255,0),1);
 	initPhasenraum(&Z_Raum,5.0f,3.0f,2.0f,spGetRGB(255,255,0),1);
+	initTrace(&X_Raum,&Y_Raum,&Z_Raum);
 	spSetDefaultWindowSize( WINDOW_X, WINDOW_Y );
 	spSetupWindowAttributes("EBBA - Electron Bunch Beamline Animation","./ebba.png");
 	spInitCore();
