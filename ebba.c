@@ -57,7 +57,7 @@ void draw(void)
 	spFontDrawMiddle(screen->w/2,font->maxheight*0,0,"[B] Exit",font);
 	spFontDrawMiddle(screen->w/2,font->maxheight*1,0,"[R] Pause",font);
 	spFontDrawMiddle(screen->w/2,font->maxheight*2,0,"[d] Toggle View",font);
-	spFontDrawMiddle(screen->w/2,font->maxheight*3,0,"[a] Colorful!",font);
+	spFontDrawMiddle(screen->w/2,font->maxheight*3,0,"[a] Show distribution!",font);
 	switch (colormode)
 	{
 		case 0: spFontDrawMiddle(screen->w/2,font->maxheight*4,0,"[q]&[e] green-yellow-red",font); break;

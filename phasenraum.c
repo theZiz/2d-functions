@@ -26,6 +26,18 @@ float calc_phi(float alpha,float beta,float gamma)
 	return phi;
 }
 
+float gauss(tPhasenraum* raum,float x,float y)
+{
+	float phi = calc_phi(raum->alpha,raum->beta,raum->gamma);
+	float SIN = -sin(phi);
+	float COS = cos(phi);
+	float a=sqrt(raum->epsilon/(raum->gamma*COS*COS-2.0f*raum->alpha*COS*SIN+raum->beta*SIN*SIN));
+	float b=sqrt(raum->epsilon/(raum->gamma*SIN*SIN+2.0f*raum->alpha*COS*SIN+raum->beta*COS*COS));
+	float X = (x*COS+y*-SIN) / a;
+	float Y = (x*SIN+y*COS) / b;
+	return 1.0f/(2*M_PI)*(exp(-0.5f*(X*X+Y*Y))-exp(-0.5f));
+}
+
 void dicePhasenraumParticles(tPhasenraum* raum)
 {
 	//dicing the particles positions:
@@ -120,6 +132,8 @@ void drawPhasenraumEllipse(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 
 void drawPhasenraumParticles(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 {
+	if (draw_field)
+		return;
 	int one;
 	if (x2-x1 < y2-y1)
 		one = (float)(x2-x1)/zoom;
@@ -270,7 +284,7 @@ void calcPhasenraum(tPhasenraum* raum,int x1,int y1,int x2,int y2,int steps)
 			for (y = 0; y <= RASTER_Y; y++)
 			{
 				float f_y = ((float)y / (float)RASTER_Y - 0.5f) * zoom * 2.0f * (float)(h)/(float)(w);
-				raum->marching_points[x][y] = function(f_x,f_y);
+				raum->marching_points[x][y] = gauss(raum,f_x,f_y);
 			}
 		}
 	}
@@ -283,7 +297,7 @@ void calcPhasenraum(tPhasenraum* raum,int x1,int y1,int x2,int y2,int steps)
 			for (y = 0; y <= RASTER_Y; y++)
 			{
 				float f_y = ((float)y / (float)RASTER_Y - 0.5f) * zoom * 2.0f;
-				raum->marching_points[x][y] = function(f_x,f_y);
+				raum->marching_points[x][y] = gauss(raum,f_x,f_y);
 			}
 		}
 	}
