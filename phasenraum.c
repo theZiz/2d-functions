@@ -33,9 +33,81 @@ float gauss(tPhasenraum* raum,float x,float y)
 	float COS = cos(phi);
 	float a=sqrt(raum->epsilon/(raum->gamma*COS*COS-2.0f*raum->alpha*COS*SIN+raum->beta*SIN*SIN));
 	float b=sqrt(raum->epsilon/(raum->gamma*SIN*SIN+2.0f*raum->alpha*COS*SIN+raum->beta*COS*COS));
-	float X = (x*COS+y*-SIN) / a;
-	float Y = (x*SIN+y*COS) / b;
-	return 1.0f/(2*M_PI)*(exp(-0.5f*(X*X+Y*Y))-exp(-0.5f));
+	float X = (x*COS/a+y*-SIN/a);
+	float Y = (x*SIN/b+y*COS/b);
+	return 1.0f/(2*M_PI)*exp(-0.5f*(X*X+Y*Y));
+}
+
+float distribution(tPhasenraum* raum,float x,float y)
+{
+	return gauss(raum,x,y)-exp(-0.5f)/(2*M_PI);
+}
+
+float erf_positive(float x)
+{
+	float devisor = 1.0+0.278393*x+0.230389*x*x+0.000972*x*x*x+0.078108*x*x*x*x;
+	devisor *= devisor; //²
+	devisor *= devisor; //²
+	return 1.0f-1.0f/devisor;
+}
+
+float erf_(float x)
+{
+	if (x < 0.0f) 
+		return -erf_positive(-x);
+	return erf_positive(x);
+}
+
+float GAUSS(tPhasenraum* raum,float x)
+{
+	float phi = calc_phi(raum->alpha,raum->beta,raum->gamma);
+	float SIN = -sin(phi);
+	float COS = cos(phi);
+	float A=sqrt(raum->epsilon/(raum->gamma*COS*COS-2.0f*raum->alpha*COS*SIN+raum->beta*SIN*SIN));
+	float B=sqrt(raum->epsilon/(raum->gamma*SIN*SIN+2.0f*raum->alpha*COS*SIN+raum->beta*COS*COS));
+	float R11 = +COS/A;
+	float R12 = +SIN/B;
+	float R21 = -SIN/A;
+	float R22 = +COS/B;
+	float a = (R11*R11+R12*R12)/2.0f;
+	float b =  R12*R22+R11*R21;
+	float c = (R21*R21+R22*R22)/2.0f;
+	float k = sqrt(1.0f/(16.0f*M_PI*c));
+	float l = b*b/(4.0f*c)-a;
+	float m = (b*raum->beta-2.0f*c*raum->alpha)/(2.0f*sqrt(c)*raum->beta);
+	float n = c;
+	float part = sqrt(n*(raum->beta*raum->epsilon-x*x))/raum->beta;
+	float result = fabs(k*exp(l*x*x)*(erf_(m*x+part)-erf_(m*x-part)));
+	return result;	
+}
+
+void drawPhasenraumIntegral(tPhasenraum* raum,int x1,int y1,int x2,int y2)
+{
+	int mx = x1+x2 >> 1;
+	int my = y1+y2 >> 1;
+	int w = x2-x1;
+	int h = y2-y1;
+	int one;
+	if (x2-x1 < y2-y1)
+		one = (float)(x2-x1)/zoom;
+	else
+		one = (float)(y2-y1)/zoom;
+	
+	int x = (int)(sqrt(raum->epsilon*raum->beta)*(float)one)/2;
+	int lx = mx-x;
+	int rx = mx+x;
+	if (lx < x1)
+		lx = x1;
+	if (rx > x2)
+		rx = x2;
+	float highest = GAUSS(raum,0.0f);
+	for (x = lx; x < rx; x++)
+	{
+		float X = (float)((x-mx)*2)/(float)one;
+		float I = GAUSS(raum,X)/highest;
+		int r = I*255.0f;
+		spEllipse(x,my,0,2,2,spGetRGB(r,r,r));
+	}
 }
 
 void dicePhasenraumParticles(tPhasenraum* raum)
@@ -284,7 +356,7 @@ void calcPhasenraum(tPhasenraum* raum,int x1,int y1,int x2,int y2,int steps)
 			for (y = 0; y <= RASTER_Y; y++)
 			{
 				float f_y = ((float)y / (float)RASTER_Y - 0.5f) * zoom * 2.0f * (float)(h)/(float)(w);
-				raum->marching_points[x][y] = gauss(raum,f_x,f_y);
+				raum->marching_points[x][y] = distribution(raum,f_x,f_y);
 			}
 		}
 	}
@@ -297,7 +369,7 @@ void calcPhasenraum(tPhasenraum* raum,int x1,int y1,int x2,int y2,int steps)
 			for (y = 0; y <= RASTER_Y; y++)
 			{
 				float f_y = ((float)y / (float)RASTER_Y - 0.5f) * zoom * 2.0f;
-				raum->marching_points[x][y] = gauss(raum,f_x,f_y);
+				raum->marching_points[x][y] = distribution(raum,f_x,f_y);
 			}
 		}
 	}
@@ -310,6 +382,7 @@ void drawPhasenraumAll(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 	drawPhasenraumEllipse    (raum,x1,y1,x2,y2);
 	drawPhasenraumParticles  (raum,x1,y1,x2,y2);
 	drawPhasenraumInformation(raum,x1,y1,x2,y2);
+	drawPhasenraumIntegral   (raum,x1,y1,x2,y2);
 }
 
 void resetPhasenraumDrift(tPhasenraum* raum)
