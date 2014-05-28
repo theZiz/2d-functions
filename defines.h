@@ -1,7 +1,7 @@
 #define WINDOW_X 1024
 #define WINDOW_Y 768
 
-#define PARTICLE_COUNT 25000
+#define PARTICLE_COUNT 3333
 #define PARTICLE_NEXT_DRAW 1
 
 #define calc_gamma(alpha,beta) ((1+alpha*alpha) / beta)

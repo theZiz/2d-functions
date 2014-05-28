@@ -77,7 +77,7 @@ float GAUSS(tPhasenraum* raum,float x)
 	float m = (b*raum->beta-2.0f*c*raum->alpha)/(2.0f*sqrt(c)*raum->beta);
 	float n = c;
 	float part = sqrt(n*(raum->beta*raum->epsilon-x*x))/raum->beta;
-	float result = fabs(k*exp(l*x*x)*(erf_(m*x+part)-erf_(m*x-part)));
+	float result = fabs(k*exp(l*4.0f*x*x)*(erf_(m*2.0f*x+part)-erf_(m*2.0f*x-part)));
 	return result;	
 }
 
@@ -149,6 +149,19 @@ void initPhasenraum(tPhasenraum* raum,float start_alpha,float start_beta,float e
 	raum->color = color;
 	if (dice)
 		dicePhasenraumParticles(raum);
+}
+
+void printPhasenraum(tPhasenraum* raum)
+{
+	printf("function:\n");
+	printf("(%f*x*x+2.0*%f*x*y+%f*y*y-%f) == 0\n",raum->gamma,raum->alpha,raum->beta,raum->epsilon);
+	printf("particles:\n");
+	printf("X\tY\n");
+	int i;
+	for (i = 0; i < PARTICLE_COUNT; i++)
+	{
+		printf("%f\t%f\n",raum->particle[0][i],raum->particle[1][i]);
+	}
 }
 
 void drawPhasenraumEllipse(tPhasenraum* raum,int x1,int y1,int x2,int y2)
