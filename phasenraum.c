@@ -78,7 +78,7 @@ float GAUSS(tPhasenraum* raum,float x)
 	float n = c;
 	float part = sqrt(n*(raum->beta*raum->epsilon-x*x))/raum->beta;
 	float result = fabs(k*exp(l*4.0f*x*x)*(erf_(m*2.0f*x+part)-erf_(m*2.0f*x-part)));
-	return result;	
+	return result;
 }
 
 void drawPhasenraumIntegral(tPhasenraum* raum,int x1,int y1,int x2,int y2)
@@ -395,7 +395,7 @@ void drawPhasenraumAll(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 	drawPhasenraumEllipse    (raum,x1,y1,x2,y2);
 	drawPhasenraumParticles  (raum,x1,y1,x2,y2);
 	drawPhasenraumInformation(raum,x1,y1,x2,y2);
-	drawPhasenraumIntegral   (raum,x1,y1,x2,y2);
+	//drawPhasenraumIntegral   (raum,x1,y1,x2,y2);
 }
 
 void resetPhasenraumDrift(tPhasenraum* raum)
