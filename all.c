@@ -6,6 +6,7 @@ void fill_all_from_matrix(tPhasenraum* X,tPhasenraum* Y,tPhasenraum* Z,pMatrix m
 	float B = (*matrix)[0][0];
 	float C = (*matrix)[1][1];
 	float epsilon = sqrt(C*B-A*A);
+	printf("%f\n",epsilon);
 	initPhasenraum(X,A/(-epsilon),B/epsilon,epsilon,color1,dice);
 	A = (*matrix)[2][3];
 	B = (*matrix)[2][2];

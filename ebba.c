@@ -85,12 +85,12 @@ void draw(void)
 		case 3: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: Quadrupole with I=+0.2A",font); break;
 		case 4: spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*5,0,"Element: Quadrupole with I=-0.2A",font); break;
 	}
-	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*4,0,"[s] Apply! (Change with "SP_PAD_NAME")",font);
+	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*4,0,"[s] Apply! (Change with [^]/[v])",font);
 	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*3,0,"[w] Switch ELBE / Test values",font);
 	if (one_step > 0)
-		sprintf(buffer,SP_PAD_NAME": Speed: 2^%i=%.5f",-one_step,spFixedToFloat(SP_ONE>>one_step));
+		sprintf(buffer,"[<]/[>]: Speed: 2^%i=%.5f",-one_step,spFixedToFloat(SP_ONE>>one_step));
 	else
-		sprintf(buffer,SP_PAD_NAME": Speed: 2^%i=%.5f",-one_step,spFixedToFloat(SP_ONE<<-one_step));
+		sprintf(buffer,"[<]/[>]: Speed: 2^%i=%.5f",-one_step,spFixedToFloat(SP_ONE<<-one_step));
 	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*2,0,buffer,font);
 	sprintf(buffer,"FPS: %i",spGetFPS());
 	spFontDrawMiddle(screen->w/2,screen->h-font->maxheight*1,0,buffer,font);
@@ -206,6 +206,10 @@ void resize( Uint16 w, Uint16 h )
 	spFontAddButton( font, 'd', SP_BUTTON_RIGHT_NOWASD_NAME, 65535, spGetRGB(127,127,127) ); // d == right button
 	spFontAddButton( font, 'w', SP_BUTTON_UP_NOWASD_NAME, 65535, spGetRGB(127,127,127) ); // w == up button
 	spFontAddButton( font, 's', SP_BUTTON_DOWN_NOWASD_NAME, 65535, spGetRGB(127,127,127) ); // s == down button
+	spFontAddArrowButton( font, '<', SP_BUTTON_ARROW_LEFT, 65535, spGetRGB(127,127,127) );
+	spFontAddArrowButton( font, '^', SP_BUTTON_ARROW_UP, 65535, spGetRGB(127,127,127) );
+	spFontAddArrowButton( font, '>', SP_BUTTON_ARROW_RIGHT, 65535, spGetRGB(127,127,127) );
+	spFontAddArrowButton( font, 'v', SP_BUTTON_ARROW_DOWN, 65535, spGetRGB(127,127,127) );
 	spFontMulWidth(font,spFloatToFixed(0.85f));
 	spFontAddBorder(font , 0);//spGetRGB(128,128,128));
 	spSelectRenderTarget(screen);

@@ -395,7 +395,7 @@ void drawPhasenraumAll(tPhasenraum* raum,int x1,int y1,int x2,int y2)
 	drawPhasenraumEllipse    (raum,x1,y1,x2,y2);
 	drawPhasenraumParticles  (raum,x1,y1,x2,y2);
 	drawPhasenraumInformation(raum,x1,y1,x2,y2);
-	//drawPhasenraumIntegral   (raum,x1,y1,x2,y2);
+	drawPhasenraumIntegral   (raum,x1,y1,x2,y2);
 }
 
 void resetPhasenraumDrift(tPhasenraum* raum)
